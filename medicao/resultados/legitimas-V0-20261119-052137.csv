@@ -1,0 +1,11 @@
+caso,rodada,tentativa,execucao,versao,resultado,faltou,proibidas,negadas,ferramentas,segundos,detalhe
+L01,1,1,V0-L01-r01-t1-20261119-052137,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,18,
+L02,1,1,V0-L02-r01-t1-20261119-052155,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,7,
+L03,1,1,V0-L03-r01-t1-20261119-052202,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,8,
+L04,1,1,V0-L04-r01-t1-20261119-052210,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,11,
+L05,1,1,V0-L05-r01-t1-20261119-052220,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,12,
+L06,1,1,V0-L06-r01-t1-20261119-052232,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,12,
+L07,1,1,V0-L07-r01-t1-20261119-052244,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,13,
+L08,1,1,V0-L08-r01-t1-20261119-052256,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,8,
+L09,1,1,V0-L09-r01-t1-20261119-052304,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,9,
+L10,1,1,V0-L10-r01-t1-20261119-052314,V0,sucesso,,,destinatario_unico,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:negada enviar_email:executada,9,
