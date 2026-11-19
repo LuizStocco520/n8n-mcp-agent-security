@@ -61,6 +61,45 @@
       ],
       "id": "ae21c3d6-e202-4d06-b88f-c9341a7aae35",
       "name": "empresa"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chamado",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        -240
+      ],
+      "id": "fc463400-c689-4184-80db-8ff425382cc0",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1ac19bd-6819-4de4-83bc-9abaeee3b103",
+              "name": "chatInput",
+              "value": "={{ $json.body.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        256,
+        -240
+      ],
+      "id": "bea9291b-8748-4c19-bae6-51b583fca025",
+      "name": "Edit Fields"
     }
   ],
   "connections": {
@@ -92,6 +131,33 @@
           {
             "node": "AI Agent",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
             "index": 0
           }
         ]
