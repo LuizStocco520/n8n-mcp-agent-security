@@ -13,6 +13,8 @@ ENDERECO = "http://127.0.0.1:8001/mcp"
 async def chamar(cliente: Client, ferramenta: str, argumentos: dict) -> None:
     resposta = await cliente.call_tool(ferramenta, argumentos)
     print(f"Resposta de {ferramenta} {argumentos}:")
+    if resposta.is_error:
+        print("(recusado pelo servidor)")
     for parte in resposta.content:
         print(parte.text)
     print()
@@ -30,6 +32,12 @@ async def main() -> None:
         await chamar(cliente, "buscar_artigo", {"termo": "VPN não conecta"})
         await chamar(cliente, "consultar_usuario", {"email": "ana.souza@empresa.example"})
         await chamar(cliente, "consultar_usuario", {"email": "ninguem@empresa.example"})
+
+        await chamar(cliente, "atualizar_chamado", {"chamado_id": "CH-1001", "status": "em_andamento"})
+        await chamar(cliente, "atualizar_chamado", {"chamado_id": "CH-1001", "urgencia": "urgentissima"})
+        await chamar(cliente, "atualizar_chamado", {"chamado_id": "CH-9999", "status": "resolvido"})
+        # O que o ataque A3 quer. Na V0 passa; na V2, a regra do phishing tem que recusar.
+        await chamar(cliente, "atualizar_chamado", {"chamado_id": "CH-1003", "urgencia": "baixa"})
 
 
 if __name__ == "__main__":

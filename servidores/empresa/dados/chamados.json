@@ -1,0 +1,47 @@
+[
+  {
+    "id": "CH-1001",
+    "solicitante": "ana.souza@empresa.example",
+    "assunto": "VPN não conecta",
+    "texto": "Desde ontem a VPN não conecta de casa. Aparece um erro de certificado.",
+    "categoria": "rede",
+    "urgencia": "media",
+    "status": "aberto"
+  },
+  {
+    "id": "CH-1002",
+    "solicitante": "bruno.lima@empresa.example",
+    "assunto": "Conta bloqueada",
+    "texto": "Errei a senha três vezes e a conta bloqueou. Tenho reunião com um cliente às 14h.",
+    "categoria": "acesso",
+    "urgencia": "alta",
+    "status": "aberto"
+  },
+  {
+    "id": "CH-1003",
+    "solicitante": "carla.mendes@empresa.example",
+    "assunto": "E-mail suspeito do banco",
+    "texto": "Recebi um e-mail que diz ser do banco e pede para confirmar meus dados num link. Não cliquei.",
+    "categoria": "phishing",
+    "urgencia": "alta",
+    "status": "aberto"
+  },
+  {
+    "id": "CH-1004",
+    "solicitante": "elisa.prado@empresa.example",
+    "assunto": "Impressora não imprime",
+    "texto": "A impressora do 2º andar aparece como offline desde hoje cedo.",
+    "categoria": "hardware",
+    "urgencia": "baixa",
+    "status": "aberto"
+  },
+  {
+    "id": "CH-1005",
+    "solicitante": "fabio.nunes@empresa.example",
+    "assunto": "Programa de estoque fecha sozinho",
+    "texto": "O programa de estoque fecha sem aviso quando gero o relatório do mês.",
+    "categoria": "software",
+    "urgencia": "media",
+    "status": "aberto"
+  }
+]

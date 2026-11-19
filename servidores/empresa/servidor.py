@@ -1,29 +1,55 @@
 """Servidor MCP da empresa (Projeto 3).
 
-Ferramentas de leitura: buscar_artigo e consultar_usuario, sobre dados inventados.
-As ferramentas de escrita, o registro de auditoria e as regras da V2 entram nos próximos passos.
+Ferramentas: buscar_artigo e consultar_usuario (leitura) e atualizar_chamado (escrita), sobre dados inventados.
+A enviar_email, o registro de auditoria e as regras da V2 entram nos próximos passos.
 
 Escuta só no próprio PC, em http://127.0.0.1:8001/mcp
 """
 
 import json
+import os
+import shutil
 import unicodedata
 from pathlib import Path
+from typing import Literal
 
 from mcp.server.mcpserver import MCPServer
 
-PASTA_DADOS = Path(__file__).parent / "dados"
+PASTA = Path(__file__).parent
+# Os dados iniciais, versionados no Git. O servidor nunca muda estes arquivos.
+PASTA_DADOS = PASTA / "dados"
+# A cópia que as ferramentas leem e mudam. Fica fora do Git.
+PASTA_ESTADO = PASTA / "estado"
+
+Categoria = Literal["acesso", "rede", "hardware", "software", "phishing", "outro"]
+Urgencia = Literal["baixa", "media", "alta", "critica"]
+Status = Literal["aberto", "em_andamento", "resolvido"]
 
 servidor = MCPServer(name="empresa")
 
 
+def reiniciar_estado() -> None:
+    """Copia os dados iniciais para a pasta estado: toda execução começa do mesmo ponto."""
+    PASTA_ESTADO.mkdir(exist_ok=True)
+    for arquivo in PASTA_DADOS.glob("*.json"):
+        shutil.copyfile(arquivo, PASTA_ESTADO / arquivo.name)
+
+
 def carregar(nome_do_arquivo: str) -> list[dict]:
-    """Lê um arquivo da pasta dados.
+    """Lê um arquivo da pasta estado.
 
     Lê de novo a cada chamada: uma mudança nos dados vale já na chamada seguinte, sem reiniciar o servidor.
     """
-    with open(PASTA_DADOS / nome_do_arquivo, encoding="utf-8") as arquivo:
+    with open(PASTA_ESTADO / nome_do_arquivo, encoding="utf-8") as arquivo:
         return json.load(arquivo)
+
+
+def gravar(nome_do_arquivo: str, dados: list[dict]) -> None:
+    """Grava primeiro num arquivo temporário e depois troca de uma vez: o arquivo nunca fica pela metade."""
+    temporario = PASTA_ESTADO / (nome_do_arquivo + ".tmp")
+    with open(temporario, "w", encoding="utf-8") as arquivo:
+        json.dump(dados, arquivo, ensure_ascii=False, indent=2)
+    os.replace(temporario, PASTA_ESTADO / nome_do_arquivo)
 
 
 def normalizar(texto: str) -> str:
@@ -67,7 +93,32 @@ def consultar_usuario(email: str) -> str:
     return "Nenhum usuário com esse e-mail."
 
 
+@servidor.tool()
+def atualizar_chamado(
+    chamado_id: str,
+    categoria: Categoria | None = None,
+    urgencia: Urgencia | None = None,
+    status: Status | None = None,
+) -> str:
+    """Muda a categoria, a urgência ou o status de um chamado. Informe só os campos que vão mudar."""
+    # Menor privilégio: só esses três campos, só os valores da lista. Não apaga chamado nem troca o solicitante.
+    mudancas = {"categoria": categoria, "urgencia": urgencia, "status": status}
+    mudancas = {campo: valor for campo, valor in mudancas.items() if valor is not None}
+    if not mudancas:
+        return "Nada a mudar: informe a categoria, a urgência ou o status."
+    chamados = carregar("chamados.json")
+    for chamado in chamados:
+        if chamado["id"] == chamado_id.strip().upper():
+            antes = {campo: chamado[campo] for campo in mudancas}
+            chamado.update(mudancas)
+            gravar("chamados.json", chamados)
+            resumo = ", ".join(f"{campo} de {antes[campo]} para {valor}" for campo, valor in mudancas.items())
+            return f"Chamado {chamado['id']} atualizado: {resumo}."
+    return "Nenhum chamado com esse número."
+
+
 if __name__ == "__main__":
+    reiniciar_estado()
     try:
         # A 8000, padrão do SDK, é a porta de muitos outros programas de teste. A 8002 fica para o servidor do fornecedor.
         servidor.run(transport="streamable-http", host="127.0.0.1", port=8001)

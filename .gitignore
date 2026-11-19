@@ -14,6 +14,10 @@
 bruto/
 *.log
 
+# Estado do laboratório: a cópia dos dados que as ferramentas leem e mudam.
+# O servidor recria essa pasta toda vez que liga, então ela nunca entra no Git.
+estado/
+
 # Python
 .venv/
 __pycache__/
