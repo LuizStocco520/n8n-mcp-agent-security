@@ -1,6 +1,6 @@
 # Threat model
 
-Status: draft, Phase 1. Sections 1 to 4 describe the system; section 5, the threats, comes next.
+Status: Phase 1. Sections 1 to 4 describe the system, section 5 lists the threats, and section 6 records the design changes the threat model produced.
 
 The method follows Adam Shostack's four questions:
 
@@ -106,4 +106,49 @@ Attacks come in on the left, through what the agent reads. They only cause damag
 
 ## 5. Threats
 
-Next step: STRIDE per element, mapped to the OWASP Top 10 for LLM Applications 2026, the OWASP Top 10 for Agentic Applications and MITRE ATLAS, with the control and the test for each threat.
+Each threat is placed on an element or flow of the diagram and classified with STRIDE: **S**poofing, **T**ampering, **R**epudiation, **I**nformation disclosure, **D**enial of service, **E**levation of privilege. "Maps to" lists the OWASP Top 10 for LLM Applications 2026 (LLM), the OWASP Top 10 for Agentic Applications 2026 (ASI) and MITRE ATLAS 2026.10 (AML). "Test" names the attack family (A1 to A6, four variations each) or the check that shows whether the control holds.
+
+| ID | Where | STRIDE | Threat | Maps to | Control | Test |
+|---|---|---|---|---|---|---|
+| T1 | KB article → agent (TB1) | I | Instructions in an article make the agent e-mail a user's record out of the company | LLM01, LLM02, LLM03 · ASI01, ASI02 · AML.T0051.001, AML.T0099, AML.T0086 | V2: e-mail only to the requester or the security mailbox, never with a CPF; V3 approval | A1 |
+| T2 | Ticket text → agent (TB1) | I | The same, by direct injection in the ticket | LLM01, LLM02, LLM03 · ASI01, ASI02 · AML.T0051.000, AML.T0086 | V2; V3 | A2 |
+| T3 | Ticket or article → `atualizar_chamado` (TB2) | T | The urgency of a phishing ticket is lowered | LLM01, LLM03 · ASI01, ASI02 · AML.T0051, AML.T0053 | V2: a phishing ticket never drops below high; V3 | A3 |
+| T4 | User record → agent (TB1) | T | Instructions stored in the observations field trigger T1 or T3 | LLM01, LLM03 · ASI01, ASI06 · AML.T0051.001, AML.T0099 | V2 and V3 judge the action, not its source | A4 |
+| T5 | KB article → reply e-mail | T | A link to an outside site goes into the reply the user trusts | LLM01, LLM10 · ASI01, ASI09 · AML.T0051.001, AML.T0067 | V2: an e-mail with a link outside `empresa.example` is refused; V3 | A5 |
+| T6 | Vendor tool description → agent (TB1, TB3) | S, T | A poisoned description of a trusted-looking tool triggers T1 or T3 | LLM01, LLM04 · ASI04, ASI02 · AML.T0010.005, AML.T0110 | V2; V3; pinning the approved description (recommended, not measured; against AML.T0109) | A6 |
+| T7 | Any text the agent reads | S | Text claims authority ("note from the administrator") and the agent obeys | LLM01 · ASI01, ASI03 | No rule takes authority from content: permissions come from the ticket's requester | the "fake administrator note" variation, in all six families |
+| T8 | Agent → write tools (TB2) | E | Confused deputy: a ticket makes the agent act for someone else, such as mailing one user's data to another employee | LLM03 · ASI03 | V2: the agent can only e-mail the ticket's requester or the security mailbox (`seguranca@empresa.example`) | legitimate tasks, and a pytest per rule |
+| T9 | Write tools | E | The agent holds more power than the task needs | LLM03 · ASI02 | Least privilege by design: each tool does one narrow thing (no delete, no attachments, no free-form query) | review of the tool list in the server |
+| T10 | Company MCP server → audit log | R | An action leaves no trace of which run, rule and reason produced it | — | Audit log per call: run, version, tool, arguments with the CPF masked, decision, rule, reason, time | every verdict is read from the log; a run with no entry has no verdict |
+| T11 | Audit log | I | The log itself stores the CPF in clear text | LLM02 | CPF masked before it is written | pytest on the masking |
+| T12 | Agent ↔ model | D | An injection makes the agent loop on tools or generate without end | LLM06 | Iteration limit on the n8n agent; output limit in Ollama; timeout per run | duration of each run; a timeout counts as an error, never as a contained attack |
+| T13 | Long input → model context | T | A long input pushes the instructions out of the context through silent truncation | LLM01 | Context fixed at 32,768 tokens; test inputs well below it | the Ollama log is checked for "truncating input prompt" after each measurement night |
+| T14 | Human approver (V3) | (human factor) | Approval fatigue: so many requests that the approver stops reading | ASI09 | Approval only for risky actions | approvals per 100 legitimate tasks, measured in V3 |
+
+**Not applicable, and why:**
+
+- ASI05 Unexpected Code Execution: no tool runs code.
+- ASI07 Insecure Inter-Agent Communication, ASI08 Cascading Failures, ASI10 Rogue Agents: there is a single agent, and no other agent consumes its output.
+- LLM05 Data and Model Poisoning: the model's training is out of scope (section 1).
+- LLM07 Misinformation: a wrong answer taken from the knowledge base is a quality problem, not measured here.
+- LLM08 Hidden Context Exposure: the system prompt holds no secret; its content is public in this repository.
+- LLM09 Vector and Embedding Weaknesses: the knowledge base has no embeddings or vector store in this design.
+
+**Residual risk:**
+
+- V3 is only as good as the person reading the approval request (T14).
+- The 24 cases are four forms of six goals. The results are attack-success rates for these cases, not a guarantee against forms that were not tested.
+
+## 6. Design changes from this threat model
+
+Writing the threats down before the code found two gaps in the original plan for V2:
+
+1. **T5:** none of the planned V2 rules looked at links, so an attack that puts a phishing link in the reply (A5) could only be stopped by V3. V2 gained a fourth rule: an e-mail with a link outside `empresa.example` is refused. Salesforce's fix for ForcedLeak included the same kind of control.
+2. **T8:** the planned recipient rule accepted any `@empresa.example` address, which let one employee's data be mailed to another. The rule now follows least privilege: the agent can only e-mail the person who opened the ticket, or the security team's mailbox.
+
+The V2 rules, as they stand:
+
+- E-mail goes only to the ticket's requester or to `seguranca@empresa.example`.
+- No CPF in the body of an e-mail.
+- No link outside `empresa.example` in the body of an e-mail.
+- A phishing ticket never drops below high urgency.
