@@ -1,0 +1,17 @@
+﻿Teste de aceitação da 7900 XTX: início 2026-11-18 21:02:55, 90 minutos
+Ollama: ollama version is 0.40.16
+Placa: AMD Radeon RX 9060 XT | driver 32.0.32015.16001 | OK
+Placa: AMD Radeon RX 7900 XTX | driver 32.0.32015.16001 | OK
+OLLAMA_NO_CLOUD=1
+OLLAMA_CONTEXT_LENGTH=32768
+OLLAMA_VULKAN=0
+Use o PC normalmente na 9060 XT e anote o horário de qualquer travada.
+Fim 2026-11-18 22:32:56: 1738 execuções, 0 erros
+Geração (tok/s): mínima 120.6, mediana 124.9, máxima 127.5
+Evento 4101 (o driver de vídeo parou de responder): 0
+Registros de hardware (WHEA-Logger): 0
+ollama ps no fim:
+NAME           ID              SIZE     PROCESSOR    CONTEXT    RUNNER      UNTIL               
+gpt-oss:20b    f38aa0c53da5    12 GB    100% GPU     32768      llamacpp    29 minutes from now
+Critérios automáticos: PASSOU (zero erros e zero evento 4101). Falta o seu: travadas no uso normal.
+Arquivos: C:\projetos\projeto3\aceitacao\resultados\aceitacao-20261118-210255.csv e C:\projetos\projeto3\aceitacao\resultados\aceitacao-20261118-210255-resumo.txt

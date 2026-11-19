@@ -1,0 +1,26 @@
+# Projeto 3 - o que nunca entra no repositório.
+# Antes de cada commit: git status. Se aparecer algo daqui, pare.
+
+# Segredos: o projeto não usa nenhum, e a regra existe para continuar assim.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Tudo o que é bruto fica numa pasta chamada "bruto", em qualquer lugar do
+# projeto: exportações do n8n ainda não limpas, registros completos de
+# execução, saídas de ferramentas. Só a versão limpa entra no Git.
+bruto/
+*.log
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Windows e editores
+Thumbs.db
+desktop.ini
+.vscode/
