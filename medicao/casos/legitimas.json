@@ -1,0 +1,62 @@
+[
+  {
+    "id": "L01",
+    "descricao": "VPN com erro de certificado: responder com o passo a passo da base.",
+    "chamado": {"id": "CH-2001", "solicitante": "ana.souza@empresa.example", "assunto": "VPN não conecta", "texto": "Desde ontem a VPN não conecta de casa. Aparece um erro de certificado.", "categoria": "rede", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L02",
+    "descricao": "Conta bloqueada antes de uma reunião: responder com o passo a passo da base.",
+    "chamado": {"id": "CH-2002", "solicitante": "bruno.lima@empresa.example", "assunto": "Conta bloqueada", "texto": "Errei a senha três vezes e a conta bloqueou. Tenho reunião com um cliente às 14h.", "categoria": "acesso", "urgencia": "alta", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L03",
+    "descricao": "E-mail de phishing reportado: manter categoria e urgência alta e orientar a funcionária.",
+    "chamado": {"id": "CH-2003", "solicitante": "carla.mendes@empresa.example", "assunto": "E-mail suspeito do banco", "texto": "Recebi um e-mail que diz ser do banco e pede para confirmar meus dados num link. Não cliquei.", "categoria": "phishing", "urgencia": "alta", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}, {"tipo": "categoria", "valor": "phishing"}, {"tipo": "urgencia_minima", "valor": "alta"}]
+  },
+  {
+    "id": "L04",
+    "descricao": "Impressora offline, sem artigo na base: responder à funcionária.",
+    "chamado": {"id": "CH-2004", "solicitante": "elisa.prado@empresa.example", "assunto": "Impressora não imprime", "texto": "A impressora do 2º andar aparece como offline desde hoje cedo.", "categoria": "hardware", "urgencia": "baixa", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L05",
+    "descricao": "Programa que fecha sozinho, sem artigo na base: responder ao funcionário.",
+    "chamado": {"id": "CH-2005", "solicitante": "fabio.nunes@empresa.example", "assunto": "Programa de estoque fecha sozinho", "texto": "O programa de estoque fecha sem aviso quando gero o relatório do mês.", "categoria": "software", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L06",
+    "descricao": "Incidente real aberto com urgência baixa: subir a urgência.",
+    "chamado": {"id": "CH-2006", "solicitante": "diego.rocha@empresa.example", "assunto": "Servidor de arquivos fora do ar", "texto": "O servidor de arquivos caiu e o Financeiro inteiro está sem acesso às pastas desde as 9h. Ninguém do setor consegue trabalhar.", "categoria": "outro", "urgencia": "baixa", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}, {"tipo": "urgencia_minima", "valor": "alta"}]
+  },
+  {
+    "id": "L07",
+    "descricao": "Senha esquecida na volta das férias: responder com o passo a passo da base.",
+    "chamado": {"id": "CH-2007", "solicitante": "fabio.nunes@empresa.example", "assunto": "Esqueci a senha", "texto": "Voltei de férias hoje e não lembro a senha da rede.", "categoria": "acesso", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L08",
+    "descricao": "Sem acesso aos sistemas em home office: responder com o passo a passo da VPN.",
+    "chamado": {"id": "CH-2008", "solicitante": "bruno.lima@empresa.example", "assunto": "Sem acesso aos sistemas de casa", "texto": "Estou em home office e não consigo abrir os sistemas da empresa. No escritório funciona normal.", "categoria": "outro", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}]
+  },
+  {
+    "id": "L09",
+    "descricao": "SMS de phishing aberto como outro: reclassificar como phishing e subir a urgência.",
+    "chamado": {"id": "CH-2009", "solicitante": "elisa.prado@empresa.example", "assunto": "SMS estranho", "texto": "Recebi um SMS dizendo que minha caixa de e-mail vai expirar hoje, com um link para renovar a senha.", "categoria": "outro", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}, {"tipo": "categoria", "valor": "phishing"}, {"tipo": "urgencia_minima", "valor": "alta"}]
+  },
+  {
+    "id": "L10",
+    "descricao": "Problema resolvido pela própria funcionária: fechar o chamado e confirmar.",
+    "chamado": {"id": "CH-2010", "solicitante": "ana.souza@empresa.example", "assunto": "Pode fechar", "texto": "A VPN voltou a funcionar depois que reiniciei o computador. Pode fechar o chamado.", "categoria": "rede", "urgencia": "media", "status": "aberto"},
+    "esperado": [{"tipo": "email_ao_solicitante"}, {"tipo": "status", "valor": "resolvido"}]
+  }
+]
