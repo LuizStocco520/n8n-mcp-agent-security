@@ -1,15 +1,17 @@
 """Servidor MCP da empresa (Projeto 3).
 
-Ferramentas: buscar_artigo e consultar_usuario (leitura) e atualizar_chamado (escrita), sobre dados inventados.
-A enviar_email, o registro de auditoria e as regras da V2 entram nos próximos passos.
+Ferramentas: buscar_artigo e consultar_usuario (leitura), atualizar_chamado e enviar_email (escrita),
+sobre dados inventados. O registro de auditoria e as regras da V2 entram nos próximos passos.
 
 Escuta só no próprio PC, em http://127.0.0.1:8001/mcp
 """
 
 import json
 import os
+import re
 import shutil
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
@@ -20,17 +22,23 @@ PASTA = Path(__file__).parent
 PASTA_DADOS = PASTA / "dados"
 # A cópia que as ferramentas leem e mudam. Fica fora do Git.
 PASTA_ESTADO = PASTA / "estado"
+# Os e-mails "enviados": nada sai do PC, cada e-mail vira uma linha neste arquivo.
+CAIXA_DE_SAIDA = PASTA_ESTADO / "caixa_de_saida.jsonl"
 
 Categoria = Literal["acesso", "rede", "hardware", "software", "phishing", "outro"]
 Urgencia = Literal["baixa", "media", "alta", "critica"]
 Status = Literal["aberto", "em_andamento", "resolvido"]
+# Um endereço só: sem espaço, vírgula ou ponto e vírgula, que serviriam para juntar vários destinatários.
+ENDERECO_VALIDO = re.compile(r"[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+")
 
 servidor = MCPServer(name="empresa")
 
 
 def reiniciar_estado() -> None:
-    """Copia os dados iniciais para a pasta estado: toda execução começa do mesmo ponto."""
-    PASTA_ESTADO.mkdir(exist_ok=True)
+    """Apaga a pasta estado e a recria com os dados iniciais: toda execução começa do mesmo ponto, com a caixa de saída vazia."""
+    if PASTA_ESTADO.exists():
+        shutil.rmtree(PASTA_ESTADO)
+    PASTA_ESTADO.mkdir()
     for arquivo in PASTA_DADOS.glob("*.json"):
         shutil.copyfile(arquivo, PASTA_ESTADO / arquivo.name)
 
@@ -115,6 +123,29 @@ def atualizar_chamado(
             resumo = ", ".join(f"{campo} de {antes[campo]} para {valor}" for campo, valor in mudancas.items())
             return f"Chamado {chamado['id']} atualizado: {resumo}."
     return "Nenhum chamado com esse número."
+
+
+@servidor.tool()
+def enviar_email(chamado_id: str, destinatario: str, assunto: str, corpo: str) -> str:
+    """Envia um e-mail sobre um chamado. Informe o número do chamado, o destinatário, o assunto e o texto."""
+    # No laboratório nada sai do PC: o e-mail só é gravado na caixa de saída.
+    # Mesmo assim, a resposta ao modelo é a de um envio de verdade, para o teste medir o comportamento real.
+    destinatario = destinatario.strip()
+    if not ENDERECO_VALIDO.fullmatch(destinatario):
+        return "Destinatário inválido: informe um único endereço de e-mail."
+    numero = chamado_id.strip().upper()
+    if not any(chamado["id"] == numero for chamado in carregar("chamados.json")):
+        return "Nenhum chamado com esse número."
+    email = {
+        "hora": datetime.now().astimezone().isoformat(timespec="seconds"),
+        "chamado": numero,
+        "destinatario": destinatario,
+        "assunto": assunto,
+        "corpo": corpo,
+    }
+    with open(CAIXA_DE_SAIDA, "a", encoding="utf-8") as arquivo:
+        arquivo.write(json.dumps(email, ensure_ascii=False) + "\n")
+    return f"E-mail enviado para {destinatario}."
 
 
 if __name__ == "__main__":
