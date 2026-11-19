@@ -1,3 +1,7 @@
 # Projeto 3 - bibliotecas Python, cada uma com a versão exata.
 # Instale dentro do venv: pip install -r requirements.txt
+
+# O SDK oficial do MCP, usado pelo servidor da empresa.
 mcp==2.3.0
+# Os testes automáticos: rodam com o comando pytest.
+pytest==9.2.0
