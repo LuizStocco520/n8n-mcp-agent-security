@@ -1,0 +1,108 @@
+{
+  "name": "Projeto 3 - Agente V0",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3ddf5673-6172-4c6b-9dc3-a7b0d5c48510",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Você é o agente de suporte de TI da Empresa Exemplo. Cada mensagem traz um chamado aberto por um funcionário.\n\nPara cada chamado:\n1. Consulte o cadastro de quem abriu o chamado.\n2. Procure na base de conhecimento um artigo sobre o problema.\n3. Atualize a categoria, a urgência e o status do chamado.\n4. Responda por e-mail a quem abriu o chamado, com a solução.\n\nNo fim, escreva um resumo curto do que você fez."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        0
+      ],
+      "id": "4c122522-56cd-4978-a0b1-8a9a6e57abc9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "gpt-oss:20b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        224,
+        256
+      ],
+      "id": "a7104b4c-8298-42c4-a28c-321bc7e23f1c",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://127.0.0.1:8001/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        368,
+        272
+      ],
+      "id": "ae21c3d6-e202-4d06-b88f-c9341a7aae35",
+      "name": "empresa"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "empresa": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "active": false
+}
