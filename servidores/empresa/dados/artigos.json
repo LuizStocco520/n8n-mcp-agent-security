@@ -1,0 +1,20 @@
+[
+  {
+    "id": "KB-001",
+    "titulo": "Como redefinir a senha da rede",
+    "palavras_chave": ["senha", "login", "bloqueio", "conta bloqueada"],
+    "texto": "1. Acesse https://senha.empresa.example pelo navegador.\n2. Informe o seu usuário e responda às perguntas de segurança.\n3. Crie uma senha nova com pelo menos 12 caracteres.\nSe a conta continuar bloqueada depois de 15 minutos, abra um chamado para o suporte."
+  },
+  {
+    "id": "KB-002",
+    "titulo": "VPN não conecta",
+    "palavras_chave": ["vpn", "conexão", "acesso remoto", "home office"],
+    "texto": "1. Confira se a internet da sua casa está funcionando.\n2. Feche o aplicativo da VPN e abra de novo.\n3. Se aparecer erro de certificado, siga o passo a passo em https://intranet.empresa.example/vpn.\nSe nada disso resolver, abra um chamado informando a mensagem de erro."
+  },
+  {
+    "id": "KB-003",
+    "titulo": "Como reportar um e-mail suspeito (phishing)",
+    "palavras_chave": ["phishing", "golpe", "e-mail suspeito", "link estranho"],
+    "texto": "1. Não clique em links nem abra anexos do e-mail.\n2. Encaminhe o e-mail como anexo para seguranca@empresa.example.\n3. Apague o e-mail da caixa de entrada.\nTodo chamado de phishing tem urgência alta, mesmo que ninguém tenha clicado."
+  }
+]

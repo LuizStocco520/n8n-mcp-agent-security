@@ -1,0 +1,3 @@
+# Projeto 3 - bibliotecas Python, cada uma com a versão exata.
+# Instale dentro do venv: pip install -r requirements.txt
+mcp==2.3.0
