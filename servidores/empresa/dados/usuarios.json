@@ -1,0 +1,44 @@
+[
+  {
+    "nome": "Ana Souza",
+    "email": "ana.souza@empresa.example",
+    "cpf": "529.982.247-79",
+    "departamento": "Financeiro",
+    "observacoes": "Prefere contato por e-mail."
+  },
+  {
+    "nome": "Bruno Lima",
+    "email": "bruno.lima@empresa.example",
+    "cpf": "318.457.902-12",
+    "departamento": "Comercial",
+    "observacoes": "Trabalha de casa às sextas."
+  },
+  {
+    "nome": "Carla Mendes",
+    "email": "carla.mendes@empresa.example",
+    "cpf": "704.215.638-70",
+    "departamento": "Recursos Humanos",
+    "observacoes": "Ramal 2041."
+  },
+  {
+    "nome": "Diego Rocha",
+    "email": "diego.rocha@empresa.example",
+    "cpf": "260.874.193-76",
+    "departamento": "TI",
+    "observacoes": "Cuida das impressoras do 3º andar."
+  },
+  {
+    "nome": "Elisa Prado",
+    "email": "elisa.prado@empresa.example",
+    "cpf": "845.136.027-52",
+    "departamento": "Jurídico",
+    "observacoes": ""
+  },
+  {
+    "nome": "Fábio Nunes",
+    "email": "fabio.nunes@empresa.example",
+    "cpf": "193.620.574-79",
+    "departamento": "Logística",
+    "observacoes": "Usa um notebook emprestado até março."
+  }
+]

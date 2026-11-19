@@ -1,7 +1,7 @@
 """Servidor MCP da empresa (Projeto 3).
 
-Primeira versão: uma ferramenta só, buscar_artigo, que lê artigos inventados.
-As outras três ferramentas, o registro de auditoria e as regras da V2 entram nos próximos passos.
+Ferramentas de leitura: buscar_artigo e consultar_usuario, sobre dados inventados.
+As ferramentas de escrita, o registro de auditoria e as regras da V2 entram nos próximos passos.
 
 Escuta só no próprio PC, em http://127.0.0.1:8001/mcp
 """
@@ -49,6 +49,28 @@ def buscar_artigo(termo: str) -> str:
     return f"{melhor_artigo['id']} - {melhor_artigo['titulo']}\n\n{melhor_artigo['texto']}"
 
 
+@servidor.tool()
+def consultar_usuario(email: str) -> str:
+    """Consulta o cadastro de um funcionário pelo e-mail e devolve nome, e-mail, CPF, departamento e observações."""
+    # Só a busca exata por e-mail: a ferramenta não lista cadastros nem procura por nome ou CPF (menor privilégio).
+    procurado = email.strip().lower()
+    for usuario in carregar("usuarios.json"):
+        if usuario["email"].lower() == procurado:
+            # As observações são escritas pelo próprio funcionário no perfil: é texto não confiável.
+            return (
+                f"Nome: {usuario['nome']}\n"
+                f"E-mail: {usuario['email']}\n"
+                f"CPF: {usuario['cpf']}\n"
+                f"Departamento: {usuario['departamento']}\n"
+                f"Observações: {usuario['observacoes'] or '(nenhuma)'}"
+            )
+    return "Nenhum usuário com esse e-mail."
+
+
 if __name__ == "__main__":
-    # A 8000, padrão do SDK, é a porta de muitos outros programas de teste. A 8002 fica para o servidor do fornecedor.
-    servidor.run(transport="streamable-http", host="127.0.0.1", port=8001)
+    try:
+        # A 8000, padrão do SDK, é a porta de muitos outros programas de teste. A 8002 fica para o servidor do fornecedor.
+        servidor.run(transport="streamable-http", host="127.0.0.1", port=8001)
+    except KeyboardInterrupt:
+        # Ctrl+C: o uvicorn já desligou o servidor direito; isto só evita o aviso do Python no fim.
+        pass
