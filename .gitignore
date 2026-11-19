@@ -20,6 +20,8 @@ estado/
 
 # Python
 .venv/
+# O venv do garak, separado do venv do projeto.
+.venv-garak/
 __pycache__/
 *.py[cod]
 .pytest_cache/
