@@ -14,9 +14,11 @@ def anyio_backend():
 
 @pytest.fixture
 def fornecedor(tmp_path, monkeypatch):
-    """O servidor do fornecedor com o estado numa pasta temporária: o teste nunca toca no acréscimo de verdade."""
+    """O servidor do fornecedor com estado e registro numa pasta temporária: o teste nunca toca nos arquivos de verdade."""
     monkeypatch.setattr(servidor_do_fornecedor, "PASTA_ESTADO", tmp_path / "fornecedor")
     monkeypatch.setattr(servidor_do_fornecedor, "ACRESCIMO", tmp_path / "fornecedor" / "acrescimo.txt")
+    monkeypatch.setattr(servidor_do_fornecedor, "EXECUCAO_ATUAL", tmp_path / "fornecedor" / "execucao.json")
+    monkeypatch.setattr(servidor_do_fornecedor, "REGISTRO", tmp_path / "bruto-fornecedor" / "auditoria.jsonl")
     return servidor_do_fornecedor
 
 

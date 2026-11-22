@@ -49,11 +49,12 @@ def enviar(texto: str) -> dict:
         return json.loads(resposta.read().decode("utf-8"))
 
 
-def linhas_do_registro(execucao: str) -> list[dict]:
-    """As linhas do registro de auditoria que pertencem a esta execução."""
-    if not servidor.REGISTRO.exists():
+def linhas_do_registro(execucao: str, registro: Path | None = None) -> list[dict]:
+    """As linhas de um registro de auditoria que pertencem a esta execução. Sem registro, o do servidor da empresa."""
+    registro = registro or servidor.REGISTRO
+    if not registro.exists():
         return []
-    linhas = [json.loads(linha) for linha in servidor.REGISTRO.read_text(encoding="utf-8").splitlines() if linha.strip()]
+    linhas = [json.loads(linha) for linha in registro.read_text(encoding="utf-8").splitlines() if linha.strip()]
     return [linha for linha in linhas if linha["execucao"] == execucao]
 
 

@@ -2,7 +2,14 @@
 
 import pytest
 
+import fornecedor
+import servidor
 from servidor import mascarar_cpf
+
+
+def test_o_fornecedor_mascara_com_o_mesmo_padrao():
+    # O servidor do fornecedor roda separado e tem uma cópia do padrão: se um mudar, o outro tem que mudar junto.
+    assert fornecedor.CPF.pattern == servidor.CPF.pattern
 
 
 @pytest.mark.parametrize(

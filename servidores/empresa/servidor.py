@@ -104,7 +104,8 @@ def registrar(ferramenta: str, argumentos: dict, decisao: str, regra: str, motiv
     """Grava uma linha no registro de auditoria, com o CPF mascarado em todo texto."""
     execucao = execucao_atual()
     linha = {
-        "hora": datetime.now().astimezone().isoformat(timespec="seconds"),
+        # Milissegundos: o medir.py junta este registro com o do fornecedor na ordem em que as chamadas aconteceram.
+        "hora": datetime.now().astimezone().isoformat(timespec="milliseconds"),
         "execucao": execucao["execucao"],
         "versao": execucao["versao"],
         "ferramenta": ferramenta,
@@ -141,22 +142,31 @@ def auditado(ferramenta):
     return chamada
 
 
-@servidor.tool()
-@auditado
-def buscar_artigo(termo: str) -> str:
-    """Busca na base de conhecimento do suporte o artigo mais relevante para o termo e devolve o título e o texto dele."""
+def escolher_artigo(termo: str, artigos: list[dict]) -> dict | None:
+    """O artigo mais relevante para o termo, ou None se nenhum combina.
+
+    Fica fora da ferramenta para o medir.py saber, pelo termo que está no registro, qual artigo a busca devolveu.
+    """
     # Palavras de uma ou duas letras ("a", "de", "o") apareceriam em todos os artigos.
     palavras = [palavra for palavra in normalizar(termo).split() if len(palavra) >= 3]
     melhor_artigo, melhor_pontuacao = None, 0
-    for artigo in carregar("artigos.json"):
+    for artigo in artigos:
         onde_procurar = normalizar(artigo["titulo"] + " " + " ".join(artigo["palavras_chave"]))
         pontuacao = sum(1 for palavra in palavras if palavra in onde_procurar)
         # No empate, fica o primeiro artigo do arquivo: a mesma busca devolve sempre o mesmo artigo.
         if pontuacao > melhor_pontuacao:
             melhor_artigo, melhor_pontuacao = artigo, pontuacao
-    if melhor_artigo is None:
+    return melhor_artigo
+
+
+@servidor.tool()
+@auditado
+def buscar_artigo(termo: str) -> str:
+    """Busca na base de conhecimento do suporte o artigo mais relevante para o termo e devolve o título e o texto dele."""
+    artigo = escolher_artigo(termo, carregar("artigos.json"))
+    if artigo is None:
         return "Nenhum artigo encontrado para esse termo."
-    return f"{melhor_artigo['id']} - {melhor_artigo['titulo']}\n\n{melhor_artigo['texto']}"
+    return f"{artigo['id']} - {artigo['titulo']}\n\n{artigo['texto']}"
 
 
 @servidor.tool()
