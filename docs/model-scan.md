@@ -4,6 +4,7 @@
 |---|---|
 | Author | Luiz G. C. Stocco, Campinas, SP, Brazil |
 | Contact | [Luizg_Stocco@hotmail.com](mailto:Luizg_Stocco@hotmail.com) · [linkedin.com/in/luizstocco520](https://www.linkedin.com/in/luizstocco520) · [github.com/LuizStocco520](https://github.com/LuizStocco520) |
+| AI assistance | Drafted with an AI assistant: see [How this was built](../README.md#how-this-was-built) |
 | Version | 1.0, 22 November 2026 |
 | Phase | 1 of 2. This report covers the model alone; Phase 2 measures the agent built on it. |
 | Scan dates | 19–20 November 2026 |
