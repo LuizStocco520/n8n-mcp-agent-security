@@ -1,5 +1,6 @@
 # Projeto 3 - o garak, num venv separado do projeto (.venv-garak).
 # Este arquivo diz só o que queremos. O requirements-garak.txt é a lista travada
 # que sai dele: as 180 bibliotecas, cada uma na versão exata e com os hashes.
-# Instale sempre pelo travado: pip install --require-hashes -r requirements-garak.txt
+# Instale sempre pelo travado, com python -m, porque a lista inclui o próprio pip:
+#   python -m pip install --require-hashes -r requirements-garak.txt
 garak==0.17.1

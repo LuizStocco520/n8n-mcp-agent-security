@@ -1,0 +1,9 @@
+# Projeto 3 - as bibliotecas que o projeto usa diretamente, no venv do projeto (.venv).
+# Este arquivo diz só o que queremos. O requirements.txt é a lista travada que sai dele:
+# as 35 bibliotecas, cada uma na versão exata e com os hashes, as mesmas instaladas em 19/11.
+# Instale sempre pelo travado: python -m pip install --require-hashes -r requirements.txt
+
+# O SDK oficial do MCP, usado pelo servidor da empresa.
+mcp==2.3.0
+# Os testes automáticos: rodam com o comando pytest.
+pytest==9.2.0

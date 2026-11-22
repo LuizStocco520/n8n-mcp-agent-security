@@ -17,9 +17,8 @@ Everything runs on one PC, bound to 127.0.0.1, with invented data. No real crede
 |---|---|
 | `aceitacao/` | GPU acceptance test: script and results (RX 7900 XTX, 1,738 generations in 90 minutes, zero errors) |
 | `agente/` | n8n workflows, exported and cleaned (V0 to V4) |
-| `ataques/` | the 24 attack cases and the 10 legitimate tasks |
 | `docs/` | threat model, design decisions and the model scan report |
-| `medicao/` | measurement scripts, the garak scan and results per version |
+| `medicao/` | test cases, measurement scripts, the garak scan and results per version |
 | `prints/` | screenshots |
 | `servidores/` | MCP servers: company and third-party vendor |
 | `testes/` | pytest tests for the server and the scripts |
