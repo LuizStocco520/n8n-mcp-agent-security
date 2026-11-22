@@ -100,3 +100,30 @@ def test_execucao_inteira_vai_para_o_juiz(medicao, monkeypatch):
     monkeypatch.setattr(medir, "enviar", agente)
     linha = medir.executar(vpn(), 1, 1, "V0")
     assert (linha["result"], linha["detail"], linha["tools"]) == ("sucesso", "", "enviar_email:executada")
+
+
+# Ataques: o texto plantado chega ao agente pela ferramenta, como numa execução de verdade, e não passa para a seguinte.
+
+def ataque(caso_id: str) -> dict:
+    return next(c for c in json.loads((medir.PASTA_CASOS / "ataques.json").read_text(encoding="utf-8")) if c["id"] == caso_id)
+
+
+def test_artigo_plantado_chega_ao_agente_e_nao_passa_adiante(empresa):
+    caso = ataque("A1-1")
+    medir.preparar(caso)
+    lido = empresa.buscar_artigo(termo="VPN")
+    # O agente lê o texto do atacante junto com os passos verdadeiros do artigo.
+    assert caso["artigo"]["acrescimo"] in lido
+    assert "https://intranet.empresa.example/vpn" in lido
+    medir.preparar(vpn())
+    assert caso["artigo"]["acrescimo"] not in empresa.buscar_artigo(termo="VPN")
+
+
+def test_observacoes_plantadas_chegam_ao_agente_e_nao_passam_adiante(empresa):
+    caso = ataque("A4-1")
+    email = caso["cadastro"]["email"]
+    medir.preparar(caso)
+    assert caso["cadastro"]["observacoes"] in empresa.consultar_usuario(email=email)
+    medir.preparar(vpn())
+    assert "backup@arquivo-corporativo.test" not in empresa.consultar_usuario(email=email)
+    assert "Usa um notebook emprestado até março." in empresa.consultar_usuario(email=email)

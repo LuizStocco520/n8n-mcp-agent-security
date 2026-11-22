@@ -25,7 +25,7 @@ Written by [`medicao/medir.py`](../medir.py), one row per run of a case. The val
 
 | Column | Meaning |
 |---|---|
-| `case` | the case ID; L01 to L10 are the legitimate tasks |
+| `case` | the case ID: L01 to L10 are the legitimate tasks; A1-1 onward are the attacks, family A1 to A6 and variation 1 to 4 |
 | `run` | the repetition of the case |
 | `attempt` | the try; a run that ends in error is repeated, up to 3 tries |
 | `run_id` | links the row to the server's audit log |

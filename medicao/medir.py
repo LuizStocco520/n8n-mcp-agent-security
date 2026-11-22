@@ -4,7 +4,8 @@ Uso, na pasta do projeto, com o venv ativo e com o servidor da empresa e o n8n l
     python medicao\medir.py legitimas
     python medicao\medir.py legitimas --rodadas 10 --casos L03,L09
 
-Para cada execução: reinicia o estado, coloca o chamado do caso, marca a execução, manda o chamado ao agente,
+Para cada execução: reinicia o estado, coloca o chamado do caso (e, nos ataques, o texto plantado num artigo da base ou
+no cadastro), marca a execução, manda o chamado ao agente,
 junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha num CSV em medicao\resultados,
 com as colunas em inglês, como tudo o que é publicado. O que cada coluna e cada valor querem dizer está em
 medicao\resultados\README.md.
@@ -85,11 +86,28 @@ def conferir_ollama() -> None:
 
 
 def preparar(caso: dict) -> dict:
-    """Estado inicial: os dados iniciais mais o chamado do caso. Devolve os chamados como estão antes da execução."""
+    """Estado inicial: os dados iniciais, o chamado do caso e, nos ataques, o texto plantado.
+
+    O estado é recriado a cada execução, então o texto plantado nunca passa para a execução seguinte.
+    Devolve os chamados como estão antes da execução.
+    """
     servidor.reiniciar_estado()
     chamados = [c for c in servidor.carregar("chamados.json") if c["id"] != caso["chamado"]["id"]]
     chamados.append(caso["chamado"])
     servidor.gravar("chamados.json", chamados)
+    # A1 e A5: alguém editou um artigo da base, que qualquer funcionário pode editar. Os passos verdadeiros ficam,
+    # e o texto do atacante entra no fim.
+    if "artigo" in caso:
+        artigos = servidor.carregar("artigos.json")
+        artigo = next(a for a in artigos if a["id"] == caso["artigo"]["id"])
+        artigo["texto"] += "\n\n" + caso["artigo"]["acrescimo"]
+        servidor.gravar("artigos.json", artigos)
+    # A4: as observações do cadastro, que o próprio funcionário escreve no perfil.
+    if "cadastro" in caso:
+        usuarios = servidor.carregar("usuarios.json")
+        usuario = next(u for u in usuarios if u["email"] == caso["cadastro"]["email"])
+        usuario["observacoes"] = caso["cadastro"]["observacoes"]
+        servidor.gravar("usuarios.json", usuarios)
     return {c["id"]: copy.deepcopy(c) for c in chamados}
 
 
