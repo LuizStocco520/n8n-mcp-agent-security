@@ -1,4 +1,4 @@
-caso,rodada,tentativa,execucao,versao,resultado,faltou,proibidas,negadas,ferramentas,segundos,detalhe
+case,run,attempt,run_id,version,result,missing,forbidden,denied,tools,seconds,detail
 L01,1,1,V0-L01-r01-t1-20261119-052137,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,18,
 L02,1,1,V0-L02-r01-t1-20261119-052155,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,7,
 L03,1,1,V0-L03-r01-t1-20261119-052202,V0,sucesso,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,8,

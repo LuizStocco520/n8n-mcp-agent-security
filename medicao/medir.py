@@ -5,7 +5,9 @@ Uso, na pasta do projeto, com o venv ativo e com o servidor da empresa e o n8n l
     python medicao\medir.py legitimas --rodadas 10 --casos L03,L09
 
 Para cada execução: reinicia o estado, coloca o chamado do caso, marca a execução, manda o chamado ao agente,
-junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha num CSV em medicao\resultados.
+junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha num CSV em medicao\resultados,
+com as colunas em inglês, como tudo o que é publicado. O que cada coluna e cada valor querem dizer está em
+medicao\resultados\README.md.
 Uma execução que dá erro (n8n fora do ar, tempo esgotado) fica no CSV como erro e é repetida: nunca conta como resultado.
 """
 
@@ -31,7 +33,7 @@ PASTA_RESULTADOS = PASTA_PROJETO / "medicao" / "resultados"
 RESPOSTAS = PASTA_PROJETO / "bruto" / "respostas.jsonl"
 # Quantas vezes tentar uma execução que deu erro antes de desistir dela.
 TENTATIVAS = 3
-COLUNAS = ["caso", "rodada", "tentativa", "execucao", "versao", "resultado", "faltou", "proibidas", "negadas", "ferramentas", "segundos", "detalhe"]
+COLUNAS = ["case", "run", "attempt", "run_id", "version", "result", "missing", "forbidden", "denied", "tools", "seconds", "detail"]
 
 
 def preparar(caso: dict) -> dict:
@@ -59,14 +61,14 @@ def executar(caso: dict, rodada: int, tentativa: int, versao: str) -> dict:
     execucao = f"{versao}-{caso['id']}-r{rodada:02d}-t{tentativa}-{datetime.now():%Y%m%d-%H%M%S}"
     marca = {"execucao": execucao, "versao": versao, "chamado": caso["chamado"]["id"]}
     servidor.EXECUCAO_ATUAL.write_text(json.dumps(marca), encoding="utf-8")
-    linha = dict.fromkeys(COLUNAS, "") | {"caso": caso["id"], "rodada": rodada, "tentativa": tentativa, "execucao": execucao, "versao": versao}
+    linha = dict.fromkeys(COLUNAS, "") | {"case": caso["id"], "run": rodada, "attempt": tentativa, "run_id": execucao, "version": versao}
     inicio = time.monotonic()
     try:
         saida = enviar(texto_do_chamado(caso["chamado"]))
     except urllib.error.HTTPError as erro:
-        return linha | {"resultado": "erro", "detalhe": f"o n8n respondeu {erro.code}", "segundos": round(time.monotonic() - inicio)}
+        return linha | {"result": "erro", "detail": f"o n8n respondeu {erro.code}", "seconds": round(time.monotonic() - inicio)}
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as erro:
-        return linha | {"resultado": "erro", "detalhe": f"{type(erro).__name__}: {erro}"[:200], "segundos": round(time.monotonic() - inicio)}
+        return linha | {"result": "erro", "detail": f"{type(erro).__name__}: {erro}"[:200], "seconds": round(time.monotonic() - inicio)}
     finally:
         servidor.EXECUCAO_ATUAL.unlink(missing_ok=True)
     segundos = round(time.monotonic() - inicio)
@@ -75,12 +77,12 @@ def executar(caso: dict, rodada: int, tentativa: int, versao: str) -> dict:
     linhas, emails, depois, cpfs = evidencias(execucao)
     resultado = veredito(caso, linhas, emails, antes, depois, cpfs)
     return linha | {
-        "resultado": resultado["resultado"],
-        "faltou": "|".join(resultado["faltou"]),
-        "proibidas": "|".join(resultado["proibidas"]),
-        "negadas": "|".join(resultado["negadas"]),
-        "ferramentas": " ".join(f"{l['ferramenta']}:{l['decisao']}" for l in linhas),
-        "segundos": segundos,
+        "result": resultado["resultado"],
+        "missing": "|".join(resultado["faltou"]),
+        "forbidden": "|".join(resultado["proibidas"]),
+        "denied": "|".join(resultado["negadas"]),
+        "tools": " ".join(f"{l['ferramenta']}:{l['decisao']}" for l in linhas),
+        "seconds": segundos,
     }
 
 
@@ -111,10 +113,10 @@ def main() -> None:
                     linha = executar(caso, rodada, tentativa, args.versao)
                     escritor.writerow(linha)
                     arquivo.flush()
-                    extra = linha["detalhe"] or linha["faltou"] and f"faltou {linha['faltou']}" or linha["proibidas"]
-                    print(f"{caso['id']} rodada {rodada}: {linha['resultado']} ({linha['segundos']} s) {extra}".rstrip())
-                    if linha["resultado"] != "erro":
-                        placar[caso["id"]].append(linha["resultado"])
+                    extra = linha["detail"] or linha["missing"] and f"faltou {linha['missing']}" or linha["forbidden"]
+                    print(f"{caso['id']} rodada {rodada}: {linha['result']} ({linha['seconds']} s) {extra}".rstrip())
+                    if linha["result"] != "erro":
+                        placar[caso["id"]].append(linha["result"])
                         break
                     erros += 1
 
