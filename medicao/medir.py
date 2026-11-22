@@ -9,6 +9,8 @@ junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha n
 com as colunas em inglês, como tudo o que é publicado. O que cada coluna e cada valor querem dizer está em
 medicao\resultados\README.md.
 Uma execução que dá erro (n8n fora do ar, tempo esgotado) fica no CSV como erro e é repetida: nunca conta como resultado.
+Antes de começar e antes de cada execução, confere o Ollama: a versão fixa da medição e o modelo inteiro na GPU.
+Se uma das duas coisas não bater, a medição para, em vez de seguir num ambiente diferente.
 """
 
 import argparse
@@ -18,6 +20,7 @@ import json
 import sys
 import time
 import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -34,6 +37,49 @@ RESPOSTAS = PASTA_PROJETO / "bruto" / "respostas.jsonl"
 # Quantas vezes tentar uma execução que deu erro antes de desistir dela.
 TENTATIVAS = 3
 COLUNAS = ["case", "run", "attempt", "run_id", "version", "result", "missing", "forbidden", "denied", "tools", "seconds", "detail"]
+# O Ollama da medição. Em 21 e 22/11, a numeração das placas mudou e o Ollama rodou na RX 9060 XT, com parte do modelo
+# no processador e um quarto da velocidade, sem nenhum erro; no dia 21, ele também passou da 0.40.16 para a 0.40.17.
+# Só a 7900 XTX comporta o modelo inteiro, então "inteiro na GPU" quer dizer a placa certa.
+OLLAMA = "http://127.0.0.1:11434"
+MODELO = "gpt-oss:20b"
+VERSAO_DO_OLLAMA = "0.40.17"
+
+
+def problemas_do_ollama(versao: str, carregados: list[dict]) -> list[str]:
+    """O que impede a medição, pelo que o Ollama informa em /api/version e /api/ps. Lista vazia: pode medir."""
+    problemas = []
+    if versao != VERSAO_DO_OLLAMA:
+        problemas.append(f"o Ollama está na versão {versao}, e a medição usa a {VERSAO_DO_OLLAMA}")
+    modelo = next((m for m in carregados if m.get("name") == MODELO), None)
+    if modelo is None:
+        problemas.append(f"o {MODELO} não está carregado no Ollama")
+    elif modelo.get("size_vram", 0) < modelo.get("size", 0):
+        problemas.append(f"só {100 * modelo.get('size_vram', 0) // modelo['size']}% do {MODELO} está na GPU")
+    return problemas
+
+
+def conferir_ollama() -> None:
+    """Confere o Ollama e carrega o modelo se ele saiu da GPU. Para a medição se algo não bater."""
+    abridor = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+    def ler(caminho: str, corpo: dict | None = None) -> dict:
+        dados = None if corpo is None else json.dumps(corpo).encode("utf-8")
+        pedido = urllib.request.Request(f"{OLLAMA}{caminho}", data=dados, headers={"Content-Type": "application/json"})
+        with abridor.open(pedido, timeout=120) as resposta:
+            return json.loads(resposta.read().decode("utf-8"))
+
+    try:
+        versao = ler("/api/version")["version"]
+        carregados = ler("/api/ps")["models"]
+        if not any(m.get("name") == MODELO for m in carregados):
+            # Um pedido sem prompt só carrega o modelo. Depois de 5 minutos parado, o Ollama o tira da GPU.
+            ler("/api/generate", {"model": MODELO, "stream": False})
+            carregados = ler("/api/ps")["models"]
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError) as erro:
+        sys.exit(f"Medição parada: o Ollama não respondeu direito em {OLLAMA} ({type(erro).__name__}: {erro}). Ele está aberto?")
+    problemas = problemas_do_ollama(versao, carregados)
+    if problemas:
+        sys.exit("Medição parada: " + "; ".join(problemas) + ". Confira o ollama ps e o log do Ollama antes de medir.")
 
 
 def preparar(caso: dict) -> dict:
@@ -98,6 +144,9 @@ def main() -> None:
     if args.casos:
         escolhidos = {c.strip().upper() for c in args.casos.split(",")}
         casos = [c for c in casos if c["id"] in escolhidos]
+    # O Ollama primeiro: se ele não estiver certo, nem o CSV é criado.
+    conferir_ollama()
+    print(f"Ollama {VERSAO_DO_OLLAMA}, com o {MODELO} inteiro na GPU.\n")
     PASTA_RESULTADOS.mkdir(exist_ok=True)
     RESPOSTAS.parent.mkdir(exist_ok=True)
     destino = PASTA_RESULTADOS / f"{args.arquivo}-{args.versao}-{datetime.now():%Y%m%d-%H%M%S}.csv"
@@ -110,6 +159,8 @@ def main() -> None:
         for caso in casos:
             for rodada in range(1, args.rodadas + 1):
                 for tentativa in range(1, TENTATIVAS + 1):
+                    # De novo antes de cada execução: se o ambiente mudar no meio da noite, a medição para ali.
+                    conferir_ollama()
                     linha = executar(caso, rodada, tentativa, args.versao)
                     escritor.writerow(linha)
                     arquivo.flush()
