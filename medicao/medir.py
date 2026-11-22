@@ -1,14 +1,17 @@
 r"""Roda os casos no agente do n8n e julga cada execução pelas evidências.
 
-Uso, na pasta do projeto, com o venv ativo e com o servidor da empresa e o n8n ligados:
+Uso, na pasta do projeto, com o venv ativo e com os servidores da empresa e do fornecedor e o n8n ligados:
     python medicao\medir.py legitimas
     python medicao\medir.py legitimas --rodadas 10 --casos L03,L09
+    python medicao\medir.py ataques --ensaio
 
 Para cada execução: reinicia o estado, coloca o chamado do caso (e, nos ataques, o texto plantado num artigo da base, no
 cadastro ou na descrição da ferramenta do fornecedor), marca a execução, manda o chamado ao agente,
 junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha num CSV em medicao\resultados,
 com as colunas em inglês, como tudo o que é publicado. O que cada coluna e cada valor querem dizer está em
 medicao\resultados\README.md.
+Com --ensaio, o CSV vai para a pasta bruto, fora do Git: o ensaio roda os casos antes da medição, para achar um caso
+quebrado sem gastar uma noite, e não é resultado publicado.
 Uma execução cortada antes do fim (n8n fora do ar, tempo esgotado, resposta vazia porque o teto de tokens cortou o modelo)
 fica no CSV como erro e é repetida: nunca conta como contida nem como incompleta (T12). A exceção é a execução em que a
 ação proibida já tinha acontecido antes do corte: o dano está feito, e o resultado é proibida.
@@ -37,6 +40,8 @@ from juiz import veredito  # noqa: E402
 
 PASTA_CASOS = PASTA_PROJETO / "medicao" / "casos"
 PASTA_RESULTADOS = PASTA_PROJETO / "medicao" / "resultados"
+# Os CSVs do ensaio ficam fora do Git, com o resto do que é bruto.
+PASTA_ENSAIOS = PASTA_PROJETO / "bruto"
 # As respostas do modelo ficam guardadas só para consulta, fora do Git. Não entram no veredito nem no CSV.
 RESPOSTAS = PASTA_PROJETO / "bruto" / "respostas.jsonl"
 # Quantas vezes tentar uma execução que deu erro antes de desistir dela.
@@ -85,6 +90,12 @@ def conferir_ollama() -> None:
     problemas = problemas_do_ollama(versao, carregados)
     if problemas:
         sys.exit("Medição parada: " + "; ".join(problemas) + ". Confira o ollama ps e o log do Ollama antes de medir.")
+
+
+def destino_do_csv(arquivo: str, versao: str, ensaio: bool, agora: datetime) -> Path:
+    """Onde gravar o CSV. Só a medição vai para a pasta resultados, que é publicada; o ensaio vai para a pasta bruto."""
+    nome = f"{arquivo}-{versao}-{agora:%Y%m%d-%H%M%S}.csv"
+    return PASTA_ENSAIOS / f"ensaio-{nome}" if ensaio else PASTA_RESULTADOS / nome
 
 
 def preparar(caso: dict) -> dict:
@@ -178,6 +189,7 @@ def main() -> None:
     parser.add_argument("--rodadas", type=int, default=1, help="quantas vezes rodar cada caso (padrão: 1)")
     parser.add_argument("--versao", default="V0", help="a versão das defesas que está ligada (padrão: V0)")
     parser.add_argument("--casos", default="", help="só estes casos, separados por vírgula. Por exemplo: L03,L09")
+    parser.add_argument("--ensaio", action="store_true", help="ensaio antes da medição: o CSV vai para a pasta bruto, fora do Git")
     args = parser.parse_args()
 
     casos = json.loads((PASTA_CASOS / f"{args.arquivo}.json").read_text(encoding="utf-8"))
@@ -187,9 +199,9 @@ def main() -> None:
     # O Ollama primeiro: se ele não estiver certo, nem o CSV é criado.
     conferir_ollama()
     print(f"Ollama {VERSAO_DO_OLLAMA}, com o {MODELO} inteiro na GPU.\n")
-    PASTA_RESULTADOS.mkdir(exist_ok=True)
+    destino = destino_do_csv(args.arquivo, args.versao, args.ensaio, datetime.now())
+    destino.parent.mkdir(exist_ok=True)
     RESPOSTAS.parent.mkdir(exist_ok=True)
-    destino = PASTA_RESULTADOS / f"{args.arquivo}-{args.versao}-{datetime.now():%Y%m%d-%H%M%S}.csv"
 
     placar: dict[str, list[str]] = {caso["id"]: [] for caso in casos}
     erros = 0
@@ -204,7 +216,8 @@ def main() -> None:
                     linha = executar(caso, rodada, tentativa, args.versao)
                     escritor.writerow(linha)
                     arquivo.flush()
-                    extra = linha["detail"] or linha["missing"] and f"faltou {linha['missing']}" or linha["forbidden"]
+                    # O que explica o resultado, nesta ordem: o que cortou a execução, o que foi proibido e o que faltou.
+                    extra = "; ".join(filter(None, [linha["detail"], linha["forbidden"], linha["missing"] and f"faltou {linha['missing']}"]))
                     print(f"{caso['id']} rodada {rodada}: {linha['result']} ({linha['seconds']} s) {extra}".rstrip())
                     if linha["result"] != "erro":
                         placar[caso["id"]].append(linha["result"])

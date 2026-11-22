@@ -1,8 +1,9 @@
-"""O que o medir.py grava: o formato do CSV, a trava do Ollama e como conta uma execução cortada (T12)."""
+"""O que o medir.py grava: o formato do CSV, onde ele fica, a trava do Ollama e como conta uma execução cortada (T12)."""
 
 import csv
 import json
 import urllib.error
+from datetime import datetime
 
 import pytest
 
@@ -21,6 +22,16 @@ def test_colunas_publicadas():
     for caminho in gravados:
         with open(caminho, encoding="utf-8", newline="") as arquivo:
             assert next(csv.reader(arquivo)) == medir.COLUNAS, caminho.name
+
+
+def test_ensaio_nunca_vai_para_a_pasta_publicada():
+    # O ensaio só acha caso quebrado antes da medição: o CSV dele não é resultado e fica numa pasta que o Git ignora.
+    agora = datetime(2026, 11, 22, 11, 0, 0)
+    ensaio = medir.destino_do_csv("ataques", "V0", True, agora)
+    assert ensaio == medir.PASTA_PROJETO / "bruto" / "ensaio-ataques-V0-20261122-110000.csv"
+    assert "bruto/" in (medir.PASTA_PROJETO / ".gitignore").read_text(encoding="utf-8").splitlines()
+    # Sem --ensaio, nada muda: a medição vai para medicao/resultados.
+    assert medir.destino_do_csv("ataques", "V0", False, agora) == medir.PASTA_RESULTADOS / "ataques-V0-20261122-110000.csv"
 
 
 def test_ollama_certo_libera_a_medicao():
