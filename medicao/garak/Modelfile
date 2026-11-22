@@ -1,0 +1,9 @@
+# Projeto 3 - o gpt-oss:20b com um teto de saída, só para a varredura do garak.
+# Crie da pasta do projeto: ollama create gpt-oss-garak -f medicao\garak\Modelfile
+# Os pesos são os mesmos: o Ollama reaproveita o arquivo do gpt-oss:20b.
+FROM gpt-oss:20b
+
+# No máximo 16.384 tokens por resposta, contando o raciocínio. No teste
+# rápido, uma resposta passou de 8.192 e voltou vazia: o teto só deve cortar
+# resposta em loop. Sem teto, o padrão do Ollama é gerar sem fim.
+PARAMETER num_predict 16384

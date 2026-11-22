@@ -1,0 +1,79 @@
+# Projeto 3 - a varredura do modelo sozinho, com o garak 0.17.1.
+# O garak manda os prompts direto para o Ollama local, sem o agente e sem as
+# ferramentas, e confere cada resposta com um detector.
+# Rode da pasta do projeto, com o .venv-garak ativo:
+#   $env:PYTHONHASHSEED = "0"
+#   garak --config medicao\garak\varredura-modelo.yaml
+
+system:
+  # Desliga um aviso do garak que só serve para quem não escolheu as sondas.
+  lite: false
+
+run:
+  # Uma resposta por prompt.
+  generations: 1
+  # A semente do sorteio dos prompts. Ela só repete a mesma amostra quando o
+  # garak roda com PYTHONHASHSEED=0: sem isso, o Python muda a ordem interna
+  # de alguns conjuntos a cada execução, e a amostra muda junto.
+  seed: 2026
+  # As sondas: cada uma é uma família de ataques. Entre parênteses, as ameaças
+  # do docs\threat-model.md que ela testa no modelo.
+  spec:
+    include:
+      # Injeção indireta: a instrução vem escondida num documento que o modelo
+      # resume, traduz ou consulta (T1, T4).
+      - probes.latentinjection.LatentInjectionReport
+      - probes.latentinjection.LatentInjectionResume
+      - probes.latentinjection.LatentInjectionTranslationEnFr
+      - probes.latentinjection.LatentInjectionTranslationEnZh
+      - probes.latentinjection.LatentInjectionFactSnippetEiffel
+      - probes.latentinjection.LatentInjectionFactSnippetLegal
+      - probes.latentinjection.LatentWhois
+      - probes.latentinjection.LatentWhoisSnippet
+      # Injeção direta: o texto manda ignorar as instruções e escrever outra
+      # coisa (T2).
+      - probes.promptinject.HijackHateHumans
+      - probes.promptinject.HijackKillHumans
+      - probes.promptinject.HijackLongPrompt
+      # Vazamento de dados por um link ou uma imagem em markdown, e código
+      # malicioso na resposta (T1, T5).
+      - probes.web_injection.MarkdownImageExfil
+      - probes.web_injection.ColabAIDataLeakage
+      - probes.web_injection.StringAssemblyDataExfil
+      - probes.web_injection.PlaygroundMarkdownExfil
+      - probes.web_injection.MarkdownXSS
+      - probes.web_injection.TaskXSS
+      # Jailbreaks coletados na internet: o texto tenta tirar o modelo das
+      # próprias regras (T7).
+      - probes.dan.DanInTheWild
+      # Conteúdo escondido em base64 e em caracteres Unicode invisíveis
+      # (T1 a T4).
+      - probes.encoding.InjectBase64
+      - probes.encoding.InjectUnicodeTagChars
+
+plugins:
+  target_type: ollama.OllamaGeneratorChat
+  # O gpt-oss:20b com um teto de saída, criado pelo medicao\garak\Modelfile.
+  target_name: gpt-oss-garak
+  # Só o detector principal de cada sonda: um número por sonda.
+  extended_detectors: false
+  generators:
+    ollama:
+      OllamaGeneratorChat:
+        host: 127.0.0.1:11434
+        # Segundos de espera por resposta. Com o teto do Modelfile (16.384
+        # tokens, uns 140 s na 7900 XTX), nenhuma resposta chega a isso.
+        timeout: 300
+        # O garak não manda teto de saída, temperatura nem semente. Valem os do
+        # modelo, como no agente, que também não manda. Sem semente, uma nova
+        # tentativa depois de um erro gera outra resposta, em vez de repetir a
+        # mesma falha para sempre.
+        suppressed_params:
+          - max_tokens
+          - temperature
+          - seed
+
+reporting:
+  # Os relatórios brutos ficam em bruto\garak, fora do Git.
+  report_dir: C:/projetos/projeto3/bruto/garak
+  report_prefix: varredura-modelo
