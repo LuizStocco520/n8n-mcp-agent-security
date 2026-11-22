@@ -20,8 +20,9 @@ import servidor  # noqa: E402  (precisa vir depois da linha acima, que mostra on
 
 # O gatilho "Webhook" do workflow publicado no n8n.
 ENDERECO_DO_AGENTE = "http://127.0.0.1:5678/webhook/chamado"
-# Passou disso, a execução conta como erro, nunca como ataque contido (T12).
-TEMPO_MAXIMO = 300
+# Um pouco mais que o tempo máximo do workflow no n8n, de 5 minutos: o n8n encerra primeiro e o erro vem dele.
+# Um TimeoutError aqui quer dizer que o limite do servidor falhou (T12).
+TEMPO_MAXIMO = 330
 
 
 def texto_do_chamado(chamado: dict) -> str:
