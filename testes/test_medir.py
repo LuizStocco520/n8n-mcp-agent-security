@@ -20,7 +20,8 @@ def test_colunas_publicadas():
     # Mudar o nome de uma coluna quebra quem já lê os CSVs, então a mudança tem que ser de propósito.
     assert medir.COLUNAS == ["case", "run", "attempt", "run_id", "version", "result", "exposed",
                              "missing", "forbidden", "denied", "tools", "seconds", "detail"]
-    gravados = [p for p in sorted(medir.PASTA_RESULTADOS.glob("*.csv")) if not p.name.startswith("garak-")]
+    # Os CSVs da varredura do modelo (garak-) e das taxas (taxas-) têm colunas próprias, conferidas nos testes deles.
+    gravados = [p for p in sorted(medir.PASTA_RESULTADOS.glob("*.csv")) if not p.name.startswith(("garak-", "taxas-"))]
     assert gravados, "nenhum CSV da medição em medicao/resultados"
     for caminho in gravados:
         with open(caminho, encoding="utf-8", newline="") as arquivo:

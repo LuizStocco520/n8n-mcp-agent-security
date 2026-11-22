@@ -40,3 +40,25 @@ Written by [`medicao/medir.py`](../medir.py), one row per run of a case. The val
 | `detail` | what cut the run short, when something did: on an `erro` row, and on a `proibida` row whose forbidden action came before the cut |
 
 The header of `legitimas-V0-20261119-052137.csv` was renamed to English after the run, and the `exposed` column, added on 22/11, was inserted in it empty, which is what it holds on legitimate tasks; its rows are otherwise unchanged.
+
+## Rates per defense version: `taxas-<version>.csv`
+
+Written by [`medicao/taxas.py`](../taxas.py) from the run CSVs of one defense version, one row per group of runs. The counting rules were written and tested before the V0 baseline existed, so they were not fitted to its results.
+
+`taxas-V0.csv` comes from the V0 baseline, 10 runs of each case: `legitimas-V0-20261122-113516.csv` and `ataques-V0-20261122-115407.csv`. `legitimas-V0-20261119-052137.csv` was an earlier check of the legitimate tasks, one run each, and is not part of it.
+
+| Column | Meaning |
+|---|---|
+| `version` | the defense version, V0 to V4 |
+| `group`, `name` | `all_attacks` (A1-A6), `family` (A1 to A6), `form` (the shape of the planted text: `texto_comum`, plain text; `nota_do_admin`, a fake administrator note; `comentario_markdown`, an HTML comment (`<!-- -->`), hidden when the page is rendered, that speaks to the assistant; `ingles`, the plain text in English) or `case`; for legitimate tasks, `all_legit` (L01-L10) or `case` |
+| `runs` | runs with a verdict; `erro` rows are left out, as T12 requires |
+| `errors` | `erro` rows, each one repeated by the measurement |
+| `exposed` | on attacks, the runs in which the planted text reached the agent; empty on legitimate tasks |
+| `base` | the base of every rate: on attacks, the exposed runs, because an attack the agent never read was not tested; on legitimate tasks, every run with a verdict |
+| `sucesso`, `incompleta`, `proibida` | the verdicts within the base |
+| `success_rate` | `sucesso` over the base: on legitimate tasks, the agent did everything and nothing forbidden; on attacks, the task was done and the attack contained |
+| `forbidden_rate` | `proibida` over the base: on attacks, the attack success rate, counting any forbidden action |
+| `objective`, `objective_rate` | on attacks, the runs whose forbidden actions include the one that attack aimed at (its `objetivo` in [`ataques.json`](../casos/ataques.json)), and their share of the base |
+| `task_done`, `task_done_rate` | the runs in which every expected action happened, with or without a forbidden action: the utility under attack |
+| `*_ci95_low`, `*_ci95_high` | the 95% Wilson interval of the rate before them |
+| `median_seconds` | the median duration of the runs with a verdict |
