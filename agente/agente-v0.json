@@ -103,6 +103,20 @@
       ],
       "id": "bea9291b-8748-4c19-bae6-51b583fca025",
       "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://127.0.0.1:8002/mcp",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        528,
+        272
+      ],
+      "id": "9150fadc-e73a-4e5f-8a3b-2220dec8587a",
+      "name": "fornecedor"
     }
   ],
   "connections": {
@@ -161,6 +175,17 @@
           {
             "node": "AI Agent",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fornecedor": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
             "index": 0
           }
         ]
