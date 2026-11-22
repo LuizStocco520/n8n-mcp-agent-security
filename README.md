@@ -4,6 +4,13 @@
 
 Everything runs on one PC, bound to 127.0.0.1, with invented data. No real credentials, no real e-mail.
 
+## Reports
+
+| Report | What it covers |
+|---|---|
+| [Threat model](docs/threat-model.md) | the system, its trust boundaries, 14 threats and the control for each |
+| [Model scan](docs/model-scan.md) | gpt-oss:20b alone against 20 garak probes: six findings, with every detector checked against the answers |
+
 ## Layout
 
 | Folder | Contents |
@@ -11,11 +18,11 @@ Everything runs on one PC, bound to 127.0.0.1, with invented data. No real crede
 | `aceitacao/` | GPU acceptance test: script and results (RX 7900 XTX, 1,738 generations in 90 minutes, zero errors) |
 | `agente/` | n8n workflows, exported and cleaned (V0 to V4) |
 | `ataques/` | the 24 attack cases and the 10 legitimate tasks |
-| `docs/` | threat model and design decisions |
-| `medicao/` | measurement script and results per version |
+| `docs/` | threat model, design decisions and the model scan report |
+| `medicao/` | measurement scripts, the garak scan and results per version |
 | `prints/` | screenshots |
 | `servidores/` | MCP servers: company and third-party vendor |
-| `testes/` | pytest tests for the V2 rules |
+| `testes/` | pytest tests for the server and the scripts |
 
 Folders are created as the project reaches them.
 
