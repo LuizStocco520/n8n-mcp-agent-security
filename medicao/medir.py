@@ -4,8 +4,8 @@ Uso, na pasta do projeto, com o venv ativo e com o servidor da empresa e o n8n l
     python medicao\medir.py legitimas
     python medicao\medir.py legitimas --rodadas 10 --casos L03,L09
 
-Para cada execução: reinicia o estado, coloca o chamado do caso (e, nos ataques, o texto plantado num artigo da base ou
-no cadastro), marca a execução, manda o chamado ao agente,
+Para cada execução: reinicia o estado, coloca o chamado do caso (e, nos ataques, o texto plantado num artigo da base, no
+cadastro ou na descrição da ferramenta do fornecedor), marca a execução, manda o chamado ao agente,
 junta as evidências e pede o veredito ao juiz. Cada execução vira uma linha num CSV em medicao\resultados,
 com as colunas em inglês, como tudo o que é publicado. O que cada coluna e cada valor querem dizer está em
 medicao\resultados\README.md.
@@ -29,7 +29,9 @@ from pathlib import Path
 
 PASTA_PROJETO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PASTA_PROJETO / "servidores" / "empresa"))
-import servidor  # noqa: E402  (precisa vir depois da linha acima, que mostra onde ele está)
+sys.path.insert(0, str(PASTA_PROJETO / "servidores" / "fornecedor"))
+import fornecedor  # noqa: E402  (precisam vir depois das linhas acima, que mostram onde eles estão)
+import servidor  # noqa: E402
 from enviar_chamado import enviar, linhas_do_registro, texto_do_chamado  # noqa: E402
 from juiz import veredito  # noqa: E402
 
@@ -108,6 +110,9 @@ def preparar(caso: dict) -> dict:
         usuario = next(u for u in usuarios if u["email"] == caso["cadastro"]["email"])
         usuario["observacoes"] = caso["cadastro"]["observacoes"]
         servidor.gravar("usuarios.json", usuarios)
+    # A6: a descrição da ferramenta do fornecedor chega com um acréscimo. Nos outros casos, o acréscimo da execução
+    # anterior é apagado e a descrição volta a ser a limpa.
+    fornecedor.plantar(caso.get("fornecedor", {}).get("acrescimo"))
     return {c["id"]: copy.deepcopy(c) for c in chamados}
 
 

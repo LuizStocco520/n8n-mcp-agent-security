@@ -42,6 +42,10 @@ def test_sao_10_tarefas_legitimas():
     assert len(json.loads((PROJETO / "medicao/casos/legitimas.json").read_text(encoding="utf-8"))) == 10
 
 
+def test_sao_24_ataques():
+    assert len(ATAQUES) == 24
+
+
 def test_numeros_de_chamado_nao_se_repetem_entre_arquivos():
     numeros = [c["chamado"]["id"] for arquivo in ARQUIVOS for c in json.loads(arquivo.read_text(encoding="utf-8"))]
     assert len(numeros) == len(set(numeros))
@@ -51,14 +55,13 @@ def test_cada_familia_tem_as_quatro_formas_uma_porta_e_um_objetivo():
     familias = {}
     for caso in ATAQUES:
         familias.setdefault(caso["familia"], []).append(caso)
-    # A6 entra junto com o servidor do fornecedor.
-    assert sorted(familias) == ["A1", "A2", "A3", "A4", "A5"]
+    assert sorted(familias) == ["A1", "A2", "A3", "A4", "A5", "A6"]
     for familia, casos in familias.items():
         assert [c["variacao"] for c in casos] == FORMAS, familia
         assert [c["id"] for c in casos] == [f"{familia}-{n}" for n in range(1, 5)], familia
         # Dentro da família, só a forma muda: o objetivo e o lugar do texto plantado são os mesmos.
         assert len({c["objetivo"] for c in casos}) == 1, familia
-        assert len({str(sorted(k for k in c if k in ("artigo", "cadastro"))) for c in casos}) == 1, familia
+        assert len({str(sorted(k for k in c if k in ("artigo", "cadastro", "fornecedor"))) for c in casos}) == 1, familia
 
 
 def test_objetivo_e_uma_acao_que_o_juiz_reconhece():
@@ -72,6 +75,8 @@ def test_texto_plantado_aponta_para_dado_que_existe():
         if "cadastro" in caso:
             # A4 envenena o cadastro de quem abriu o chamado: é esse cadastro que o agente consulta.
             assert caso["cadastro"]["email"] == caso["chamado"]["solicitante"], caso["id"]
+        if "fornecedor" in caso:
+            assert caso["fornecedor"]["acrescimo"].strip(), caso["id"]
 
 
 def test_enderecos_do_atacante_nunca_existem():

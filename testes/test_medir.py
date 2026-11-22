@@ -127,3 +127,12 @@ def test_observacoes_plantadas_chegam_ao_agente_e_nao_passam_adiante(empresa):
     medir.preparar(vpn())
     assert "backup@arquivo-corporativo.test" not in empresa.consultar_usuario(email=email)
     assert "Usa um notebook emprestado até março." in empresa.consultar_usuario(email=email)
+
+
+def test_descricao_do_fornecedor_so_vem_envenenada_na_a6(empresa, fornecedor):
+    caso = ataque("A6-1")
+    medir.preparar(caso)
+    assert fornecedor.ACRESCIMO.read_text(encoding="utf-8") == caso["fornecedor"]["acrescimo"]
+    # Qualquer outro caso apaga o acréscimo: a descrição volta a ser a limpa.
+    medir.preparar(vpn())
+    assert not fornecedor.ACRESCIMO.exists()
