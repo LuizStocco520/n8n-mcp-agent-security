@@ -1,11 +1,13 @@
 r"""Manda um chamado ao agente no n8n e mostra o que ele fez, lido no registro de auditoria.
 
-Uso, na pasta do projeto, com o venv ativo e com o servidor da empresa e o n8n ligados:
+Uso, na pasta do projeto, com o venv ativo e com os servidores da empresa e do fornecedor e o n8n ligados:
     python medicao\enviar_chamado.py CH-1002
+    python medicao\enviar_chamado.py CH-1002 --versao V1
 
 É a base do script de medição: prepara o estado, marca a execução, manda o chamado e lê o registro.
 """
 
+import argparse
 import json
 import sys
 import time
@@ -18,8 +20,9 @@ PASTA_PROJETO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PASTA_PROJETO / "servidores" / "empresa"))
 import servidor  # noqa: E402  (precisa vir depois da linha acima, que mostra onde ele está)
 
-# O gatilho "Webhook" do workflow publicado no n8n.
-ENDERECO_DO_AGENTE = "http://127.0.0.1:5678/webhook/chamado"
+# Cada versão do agente é um workflow próprio no n8n, com o gatilho "Webhook" no seu caminho. A V0 continua no
+# caminho de sempre e pode ser medida de novo a qualquer hora.
+CAMINHOS = {"V0": "chamado", "V1": "chamado-v1"}
 # Um pouco mais que o tempo máximo do workflow no n8n, de 5 minutos: o n8n encerra primeiro e o erro vem dele.
 # Um TimeoutError aqui quer dizer que o limite do servidor falhou (T12).
 TEMPO_MAXIMO = 330
@@ -35,10 +38,29 @@ def texto_do_chamado(chamado: dict) -> str:
     )
 
 
+def endereco(versao: str) -> str:
+    """O endereço do workflow de uma versão no n8n."""
+    if versao not in CAMINHOS:
+        raise ValueError(f"A versão {versao} ainda não tem workflow no n8n.")
+    return f"http://127.0.0.1:5678/webhook/{CAMINHOS[versao]}"
+
+
+def versao_marcada() -> str:
+    """A versão da execução em andamento, lida da mesma marca que os servidores leem. Sem marca, é a V0."""
+    try:
+        return json.loads(servidor.EXECUCAO_ATUAL.read_text(encoding="utf-8"))["versao"]
+    except FileNotFoundError:
+        return "V0"
+
+
 def enviar(texto: str) -> dict:
-    """Manda o chamado ao n8n e espera o agente terminar."""
+    """Manda o chamado ao workflow da versão marcada e espera o agente terminar.
+
+    A versão sai da marca da execução, a mesma que os servidores leem: o workflow que atende e o que os servidores
+    fazem nunca ficam em versões diferentes.
+    """
     pedido = urllib.request.Request(
-        ENDERECO_DO_AGENTE,
+        endereco(versao_marcada()),
         data=json.dumps({"chatInput": texto}).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
@@ -59,9 +81,11 @@ def linhas_do_registro(execucao: str, registro: Path | None = None) -> list[dict
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        sys.exit("Uso: python medicao\\enviar_chamado.py CH-1002")
-    numero = sys.argv[1].strip().upper()
+    parser = argparse.ArgumentParser(description="Manda um chamado ao agente e mostra o que ele fez.")
+    parser.add_argument("chamado", help="o número do chamado. Por exemplo: CH-1002")
+    parser.add_argument("--versao", default="V0", choices=sorted(CAMINHOS), help="a versão do agente (padrão: V0)")
+    args = parser.parse_args()
+    numero = args.chamado.strip().upper()
 
     # Toda execução começa do mesmo ponto: dados iniciais e caixa de saída vazia.
     servidor.reiniciar_estado()
@@ -70,14 +94,14 @@ def main() -> None:
         sys.exit(f"Não existe o chamado {numero} em dados\\chamados.json.")
 
     execucao = f"{numero}-{datetime.now():%Y%m%d-%H%M%S}"
-    servidor.EXECUCAO_ATUAL.write_text(json.dumps({"execucao": execucao, "versao": "V0"}), encoding="utf-8")
+    servidor.EXECUCAO_ATUAL.write_text(json.dumps({"execucao": execucao, "versao": args.versao}), encoding="utf-8")
     inicio = time.monotonic()
     try:
         saida = enviar(texto_do_chamado(chamado))
     except urllib.error.HTTPError as erro:
         detalhe = erro.read().decode("utf-8", "replace")[:300]
         if erro.code == 404:
-            dica = "O workflow está publicado, com o Webhook no caminho chamado?"
+            dica = f"O workflow da {args.versao} está publicado, com o Webhook no caminho {CAMINHOS[args.versao]}?"
         else:
             dica = "A execução falhou dentro do n8n: o erro aparece na aba Executions."
         sys.exit(f"O n8n respondeu {erro.code}: {detalhe}\n{dica}")

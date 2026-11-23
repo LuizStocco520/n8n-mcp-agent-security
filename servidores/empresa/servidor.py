@@ -1,7 +1,8 @@
 """Servidor MCP da empresa (Projeto 3).
 
 Ferramentas: buscar_artigo e consultar_usuario (leitura), atualizar_chamado e enviar_email (escrita),
-sobre dados inventados. Cada chamada vai para o registro de auditoria. As regras da V2 entram depois.
+sobre dados inventados. Cada chamada vai para o registro de auditoria. A partir da V1, o texto livre que as
+ferramentas de leitura devolvem sai marcado como dado. As regras da V2 entram depois.
 
 Escuta só no próprio PC, em http://127.0.0.1:8001/mcp
 """
@@ -100,6 +101,22 @@ def execucao_atual() -> dict:
         return {"execucao": "manual", "versao": "V0"}
 
 
+# A V1 marca como dado o texto livre que volta das ferramentas (spotlighting, na variante datamarking): um ^ no lugar
+# de cada espaço, que o prompt da V1 explica ao modelo. A V2 e a V3 somam defesas à V1, e a V4 parte dela.
+VERSOES_COM_MARCA = {"V1", "V2", "V3", "V4"}
+MARCA = "^"
+
+
+def marcar_dado(texto: str) -> str:
+    """Troca os espaços de cada linha pela marca e mantém as quebras de linha. Um link não tem espaço e não muda."""
+    return "\n".join(MARCA.join(linha.split()) for linha in texto.split("\n"))
+
+
+def dado(texto: str) -> str:
+    """O texto livre como a versão em andamento entrega ao modelo: marcado a partir da V1, igual na V0."""
+    return marcar_dado(texto) if execucao_atual()["versao"] in VERSOES_COM_MARCA else texto
+
+
 def registrar(ferramenta: str, argumentos: dict, decisao: str, regra: str, motivo: str) -> None:
     """Grava uma linha no registro de auditoria, com o CPF mascarado em todo texto."""
     execucao = execucao_atual()
@@ -166,7 +183,8 @@ def buscar_artigo(termo: str) -> str:
     artigo = escolher_artigo(termo, carregar("artigos.json"))
     if artigo is None:
         return "Nenhum artigo encontrado para esse termo."
-    return f"{artigo['id']} - {artigo['titulo']}\n\n{artigo['texto']}"
+    # O texto do artigo pode ter sido editado por um atacante (A1, A5): a partir da V1, ele sai marcado como dado.
+    return f"{artigo['id']} - {artigo['titulo']}\n\n{dado(artigo['texto'])}"
 
 
 @servidor.tool()
@@ -177,13 +195,14 @@ def consultar_usuario(email: str) -> str:
     procurado = email.strip().lower()
     for usuario in carregar("usuarios.json"):
         if usuario["email"].lower() == procurado:
-            # As observações são escritas pelo próprio funcionário no perfil: é texto não confiável.
+            # As observações são escritas pelo próprio funcionário no perfil: é texto não confiável (A4), marcado como
+            # dado a partir da V1.
             return (
                 f"Nome: {usuario['nome']}\n"
                 f"E-mail: {usuario['email']}\n"
                 f"CPF: {usuario['cpf']}\n"
                 f"Departamento: {usuario['departamento']}\n"
-                f"Observações: {usuario['observacoes'] or '(nenhuma)'}"
+                f"Observações: {dado(usuario['observacoes']) if usuario['observacoes'] else '(nenhuma)'}"
             )
     return "Nenhum usuário com esse e-mail."
 

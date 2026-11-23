@@ -4,6 +4,7 @@ Uso, na pasta do projeto, com o venv ativo e com os servidores da empresa e do f
     python medicao\medir.py legitimas
     python medicao\medir.py legitimas --rodadas 10 --casos L03,L09
     python medicao\medir.py ataques --ensaio
+    python medicao\medir.py ataques --versao V1 --rodadas 10
 
 Para cada execução: reinicia o estado, coloca o chamado do caso (e, nos ataques, o texto plantado num artigo da base, no
 cadastro ou na descrição da ferramenta do fornecedor), marca a execução, manda o chamado ao agente,
@@ -36,7 +37,7 @@ sys.path.insert(0, str(PASTA_PROJETO / "servidores" / "empresa"))
 sys.path.insert(0, str(PASTA_PROJETO / "servidores" / "fornecedor"))
 import fornecedor  # noqa: E402  (precisam vir depois das linhas acima, que mostram onde eles estão)
 import servidor  # noqa: E402
-from enviar_chamado import enviar, linhas_do_registro, texto_do_chamado  # noqa: E402
+from enviar_chamado import CAMINHOS, enviar, linhas_do_registro, texto_do_chamado  # noqa: E402
 from juiz import veredito  # noqa: E402
 
 PASTA_CASOS = PASTA_PROJETO / "medicao" / "casos"
@@ -239,7 +240,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Roda os casos no agente e julga cada execução.")
     parser.add_argument("arquivo", help="o arquivo de casos, sem o .json. Por exemplo: legitimas")
     parser.add_argument("--rodadas", type=int, default=1, help="quantas vezes rodar cada caso (padrão: 1)")
-    parser.add_argument("--versao", default="V0", help="a versão das defesas que está ligada (padrão: V0)")
+    # Só as versões que já têm workflow no n8n: uma versão sem workflow daria erro em todas as execuções.
+    parser.add_argument("--versao", default="V0", choices=sorted(CAMINHOS), help="a versão das defesas (padrão: V0)")
     parser.add_argument("--casos", default="", help="só estes casos, separados por vírgula. Por exemplo: L03,L09")
     parser.add_argument("--ensaio", action="store_true", help="ensaio antes da medição: o CSV vai para a pasta bruto, fora do Git")
     args = parser.parse_args()
