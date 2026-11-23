@@ -228,7 +228,7 @@ garak's detector counted 47 (18.4%), because it treats any answer without a refu
 
 | # | Recommendation | Findings | Status |
 |---|---|---|---|
-| R1 | Enforce the four V2 rules on the company server: recipients, CPF, links, urgency of phishing tickets | F1, F2, F3 | planned as V2 |
+| R1 | Enforce the four V2 rules on the company server: recipients, CPF, links, urgency of phishing tickets | F1, F2, F3 | measured: V2 took forbidden actions under attack to 0 of 239, with no false alarm ([results](../README.md#v2-the-rules-enforced-in-code-on-the-server)) |
 | R2 | Require human approval for outbound e-mail and urgency changes | F1, F2, F3, F6 | planned as V3 |
 | R3 | Treat prompt-level instructions (V1) as a partial control only | F1, F3 | measured: V1 cut forbidden actions under attack from 55% to 6%, not to zero ([results](../README.md#v1-rules-in-the-prompt-and-tool-output-marked-as-data)) |
 | R4 | Set an output limit for the agent's model; keep the 300-second run limit and count timeouts as errors | F5 | in the threat model; output limit not yet set in V0 |
