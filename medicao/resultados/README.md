@@ -63,6 +63,13 @@ Written by [`medicao/taxas.py`](../taxas.py) from the run CSVs of one defense ve
 | `task_done`, `task_done_rate` | the runs in which every expected action happened, with or without a forbidden action: the utility under attack |
 | `*_ci95_low`, `*_ci95_high` | the 95% Wilson interval of the rate before them |
 | `median_seconds` | the median duration of the runs with a verdict |
+| `alerts`, `alert_rate` | from V2 on, the runs in the base with at least one refusal by a security rule of the server: on legitimate tasks, a false alarm for the security team; on attacks, an attack the server stopped. Refusals by the input checks do not count |
+
+The alert columns were added before V2 was measured. V0 and V1 have no security rules, so their alerts are zero; their tables were written again with the new columns, and every other number stayed the same.
+
+## Comparisons between versions
+
+Written by [`medicao/comparar.py`](../comparar.py) from the `taxas-<version>.csv` tables of two versions: the totals of each, side by side, with Fisher's exact test, two-sided. It answers whether a difference between two versions is larger than chance would explain, which the intervals alone do not: two intervals can touch while the difference is real. The p = 0.018 that the README gives for the legitimate tasks, V0 against V1, comes from `python medicao\comparar.py V0 V1`.
 
 ## Corrections
 
