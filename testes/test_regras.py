@@ -230,7 +230,7 @@ def test_a_lista_de_terminacoes_e_a_da_iana_mais_as_de_teste():
     assert not {"msc", "ini", "lima"} & regras.TERMINACOES
 
 
-@pytest.mark.parametrize("arquivo", ["agente/agente-v1.json"])
+@pytest.mark.parametrize("arquivo", ["agente/agente-v1.json", "agente/agente-v2.json"])
 def test_os_trechos_do_prompt_estao_no_prompt(arquivo):
     # Se o prompt mudar, a regra marcador_interno tem que mudar junto: este teste avisa.
     workflow = json.loads((Path(__file__).resolve().parent.parent / arquivo).read_text(encoding="utf-8"))
