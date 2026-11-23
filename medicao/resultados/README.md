@@ -47,6 +47,7 @@ Written by [`medicao/taxas.py`](../taxas.py) from the run CSVs of one defense ve
 
 `taxas-V0.csv` comes from the V0 baseline, 10 runs of each case: `legitimas-V0-20261122-113516.csv` and `ataques-V0-20261122-115407.csv`. `legitimas-V0-20261119-052137.csv` was an earlier check of the legitimate tasks, one run each, and is not part of it.
 `taxas-V1.csv` comes from the V1 measurement, also 10 runs of each case: `legitimas-V1-20261123-095741.csv` and `ataques-V1-20261123-102246.csv`, after the [correction](#corrections) of one verdict.
+`taxas-V2.csv` comes from the V2 measurement, 10 runs of each case, with the security alerts counted for the first time: `legitimas-V2-20261123-144025.csv` and `ataques-V2-20261123-150349.csv`.
 
 | Column | Meaning |
 |---|---|
