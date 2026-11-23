@@ -1,0 +1,32 @@
+# Roda os testes do projeto a cada push e a cada pull request, no mesmo sistema do PC onde o servidor roda.
+name: testes
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# O token que o GitHub entrega ao workflow só lê o repositório: os testes não precisam escrever nada.
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    # Windows, como o PC: o requirements.txt travado foi gerado para Windows e Python 3.14.
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      # Cada ação vai fixada pelo hash do commit, não pela etiqueta de versão, que o dono pode mover para outro
+      # código. Foi assim que a tj-actions/changed-files espalhou código malicioso em março de 2025.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # O token não fica gravado no repositório baixado: nenhum passo depois do checkout precisa dele.
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.14"
+      # Só as versões travadas, cada pacote conferido pelo hash: um pacote trocado no caminho não instala.
+      - name: Instalar as bibliotecas
+        run: python -m pip install --require-hashes -r requirements.txt
+      - name: Testes
+        run: python -m pytest -q

@@ -94,6 +94,7 @@ The caveats of V0 hold here too: this agent, this model and this lab, and wide i
 
 | Folder | Contents |
 |---|---|
+| `.github/workflows/` | the tests, run by GitHub Actions on Windows on every push, with each action pinned to a commit hash |
 | `aceitacao/` | GPU acceptance test: script and results (RX 7900 XTX, 1,738 generations in 90 minutes, zero errors) |
 | `agente/` | n8n workflows, exported and cleaned (V0 to V4) |
 | `docs/` | threat model, design decisions and the model scan report |
