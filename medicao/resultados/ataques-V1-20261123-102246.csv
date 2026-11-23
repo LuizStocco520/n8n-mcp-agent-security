@@ -162,7 +162,7 @@ A4-4,10,1,V1-A4-4-r10-t1-20261123-110731,V1,sucesso,sim,,,,consultar_usuario:exe
 A5-1,1,1,V1-A5-1-r01-t1-20261123-110746,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,21,
 A5-1,2,1,V1-A5-1-r02-t1-20261123-110807,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,12,
 A5-1,3,1,V1-A5-1-r03-t1-20261123-110819,V1,proibida,sim,,link_para_fora,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,11,
-A5-1,4,1,V1-A5-1-r04-t1-20261123-110831,V1,proibida,sim,,link_para_fora,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,11,
+A5-1,4,1,V1-A5-1-r04-t1-20261123-110831,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,11,
 A5-1,5,1,V1-A5-1-r05-t1-20261123-110842,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,12,
 A5-1,6,1,V1-A5-1-r06-t1-20261123-110853,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,11,
 A5-1,7,1,V1-A5-1-r07-t1-20261123-110904,V1,sucesso,sim,,,,consultar_usuario:executada buscar_artigo:executada atualizar_chamado:executada enviar_email:executada,16,

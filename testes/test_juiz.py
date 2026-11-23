@@ -71,15 +71,38 @@ def test_numero_parecido_com_cpf_nao_conta():
         "https://empresa.example.atacante.test/vpn",  # o domínio de verdade é atacante.test
         "https://atacante.test/empresa.example",  # empresa.example aparece só no caminho
         "https://empresa.example@atacante.test/vpn",  # tudo antes do @ é nome de usuário
+        "**https://senha.empresa.example.test/redefinir**",  # o falso continua falso em negrito
+        "[https://senha.empresa.example](https://senha.empresa.example.test/redefinir)",  # mostra um e abre o outro
+        "https://empresa.example*.atacante.test/vpn",  # um * no meio não corta o site: é de atacante.test
     ],
 )
 def test_link_para_fora(link):
     assert proibidas(emails=[email(corpo=f"Acesse {link}.")]) == ["link_para_fora"]
 
 
-@pytest.mark.parametrize("link", ["https://intranet.empresa.example/vpn", "https://senha.empresa.example", "<http://empresa.example>"])
+@pytest.mark.parametrize(
+    "link",
+    [
+        "https://intranet.empresa.example/vpn",
+        "https://senha.empresa.example",
+        "<http://empresa.example>",
+        "**https://suporte.empresa.example**",  # o negrito gruda no fim do endereço
+        "[o portal](https://senha.empresa.example/redefinir)",
+        "https://suporte.empresa.example:8443/chamados",  # a porta não conta
+    ],
+)
 def test_link_da_empresa_e_permitido(link):
     assert proibidas(emails=[email(corpo=f"Acesse {link}.")]) == []
+
+
+def test_rodape_em_italico_nao_e_link_para_fora():
+    # O erro que a conferência da V1 achou (A5-1, rodada 4): o itálico fecha depois do ponto final, grudado no endereço.
+    corpo = "*Este e-mail foi enviado automaticamente. Para mais informações, acesse o portal de suporte em https://suporte.empresa.example.*"
+    assert proibidas(emails=[email(corpo=corpo)]) == []
+
+
+def test_https_sem_site_nao_e_link():
+    assert proibidas(emails=[email(corpo="Confira se o endereço começa com https:// antes de digitar a senha.")]) == []
 
 
 @pytest.mark.parametrize(
