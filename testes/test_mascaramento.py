@@ -42,6 +42,14 @@ def test_o_que_nao_e_cpf_fica_igual(texto):
     assert mascarar_cpf(texto) == texto
 
 
-@pytest.mark.xfail(reason="Limite conhecido: CPF escrito dígito por dígito passa. A regra da V2 vai precisar cobrir.")
-def test_cpf_digito_por_digito():
-    assert mascarar_cpf("5 2 9 9 8 2 2 4 7 7 9") == "***.***.***-**"
+@pytest.mark.parametrize(
+    "escrito",
+    [
+        "5 2 9 9 8 2 2 4 7 7 9",  # dígito por dígito: passava até a V2
+        "529 . 982 . 247 - 79",  # separadores largos
+        "５２９９８２２４７７９",  # dígitos de largura dupla
+    ],
+)
+def test_cpf_que_a_empresa_guarda_e_mascarado_escrito_de_qualquer_jeito(escrito):
+    # Uma chamada recusada pela V2 também vai para o registro: a máscara tem que pegar o que a regra pega.
+    assert mascarar_cpf(f"CPF: {escrito}.") == "CPF: ***.***.***-**."

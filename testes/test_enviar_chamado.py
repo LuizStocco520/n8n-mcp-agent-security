@@ -11,6 +11,7 @@ import enviar_chamado
 def test_cada_versao_tem_o_seu_endereco_e_a_v0_fica_no_de_sempre():
     assert enviar_chamado.endereco("V0") == "http://127.0.0.1:5678/webhook/chamado"
     assert enviar_chamado.endereco("V1") == "http://127.0.0.1:5678/webhook/chamado-v1"
+    assert enviar_chamado.endereco("V2") == "http://127.0.0.1:5678/webhook/chamado-v2"
     # Uma versão sem workflow para logo, em vez de dar erro em todas as execuções.
     with pytest.raises(ValueError):
         enviar_chamado.endereco("V9")

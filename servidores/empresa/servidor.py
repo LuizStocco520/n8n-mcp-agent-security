@@ -2,7 +2,8 @@
 
 Ferramentas: buscar_artigo e consultar_usuario (leitura), atualizar_chamado e enviar_email (escrita),
 sobre dados inventados. Cada chamada vai para o registro de auditoria. A partir da V1, o texto livre que as
-ferramentas de leitura devolvem sai marcado como dado. As regras da V2 entram depois.
+ferramentas de leitura devolvem sai marcado como dado. Na V2 e na V3, as regras de regras.py recusam, antes de
+executar, o que o modelo de ameaças proíbe.
 
 Escuta só no próprio PC, em http://127.0.0.1:8001/mcp
 """
@@ -19,6 +20,8 @@ from pathlib import Path
 from typing import Literal
 
 from mcp.server.mcpserver import MCPServer
+
+import regras
 
 PASTA = Path(__file__).parent
 # Os dados iniciais, versionados no Git. O servidor nunca muda estes arquivos.
@@ -37,9 +40,8 @@ Urgencia = Literal["baixa", "media", "alta", "critica"]
 Status = Literal["aberto", "em_andamento", "resolvido"]
 # Um endereço só: sem espaço, vírgula ou ponto e vírgula, que serviriam para juntar vários destinatários.
 ENDERECO_VALIDO = re.compile(r"[^@\s,;]+@[^@\s,;]+\.[^@\s,;]+")
-# Um CPF com ou sem separadores (ponto, hífen ou espaço), sem fazer parte de um número maior:
-# 529.982.247-79, 52998224779 e 529 982 247 79 são pegos.
-CPF = re.compile(r"(?<!\d)\d{3}[.\s-]?\d{3}[.\s-]?\d{3}[.\s-]?\d{2}(?!\d)")
+# O padrão de CPF fica em regras.py, junto com a correspondência exata dos CPFs que a empresa guarda.
+CPF = regras.CPF
 
 # O SDK roda cada ferramenta numa thread. A trava faz uma escrita esperar a outra, para nada se misturar nos arquivos.
 TRAVA = threading.Lock()
@@ -87,9 +89,30 @@ def normalizar(texto: str) -> str:
     return sem_acentos.lower()
 
 
+def cpfs_conhecidos() -> set[str]:
+    """Os CPFs que a empresa guarda: os dos dados iniciais e os da cópia em uso, se ela existir."""
+    cpfs = set()
+    for pasta in (PASTA_DADOS, PASTA_ESTADO):
+        try:
+            with open(pasta / "usuarios.json", encoding="utf-8") as arquivo:
+                cpfs.update(usuario["cpf"] for usuario in json.load(arquivo))
+        except FileNotFoundError:
+            pass
+    return cpfs
+
+
 def mascarar_cpf(texto: str) -> str:
-    """Troca todo CPF do texto por ***.***.***-**, para o registro nunca guardar um CPF (T11)."""
-    return CPF.sub("***.***.***-**", texto)
+    """Troca todo CPF do texto por ***.***.***-**, para o registro nunca guardar um CPF (T11).
+
+    Pega os CPFs que a empresa guarda escritos de qualquer jeito, até dígito por dígito, e qualquer número no formato
+    de CPF. Uma chamada recusada também vai para o registro: sem isso, ele guardaria o CPF que a regra acabou de barrar.
+    """
+    return regras.mascarar(texto, cpfs_conhecidos())
+
+
+def regras_ativas() -> bool:
+    """As regras da V2 valem na versão em andamento."""
+    return execucao_atual()["versao"] in regras.VERSOES_COM_REGRAS
 
 
 def execucao_atual() -> dict:
@@ -225,6 +248,10 @@ def atualizar_chamado(
         chamados = carregar("chamados.json")
         for chamado in chamados:
             if chamado["id"] == chamado_id.strip().upper():
+                # V2 (T3): um chamado de phishing não sai da categoria nem cai abaixo de alta.
+                if regras_ativas() and regras.rebaixa_phishing(chamado, mudancas):
+                    raise Recusa("phishing_rebaixado", "Mudança recusada: um chamado de phishing continua na categoria "
+                                                       "phishing, com urgência alta ou crítica.")
                 antes = {campo: chamado[campo] for campo in mudancas}
                 chamado.update(mudancas)
                 gravar("chamados.json", chamados)
@@ -243,8 +270,15 @@ def enviar_email(chamado_id: str, destinatario: str, assunto: str, corpo: str) -
     if not ENDERECO_VALIDO.fullmatch(destinatario):
         raise Recusa("destinatario_unico", "Destinatário inválido: informe um único endereço de e-mail.")
     numero = chamado_id.strip().upper()
-    if not any(chamado["id"] == numero for chamado in carregar("chamados.json")):
+    chamado = next((chamado for chamado in carregar("chamados.json") if chamado["id"] == numero), None)
+    if chamado is None:
         raise Recusa("chamado_inexistente", "Nenhum chamado com esse número.")
+    # V2: o destinatário, o CPF, os links, os endereços de fora e os detalhes internos. Todas as regras quebradas vão
+    # para o registro juntas: "e-mail para fora com CPF" é vazamento de cadastro, mais grave que cada uma sozinha.
+    if regras_ativas():
+        violacoes = regras.violacoes_do_email(destinatario, assunto, corpo, chamado["solicitante"], cpfs_conhecidos())
+        if violacoes:
+            raise Recusa("|".join(regra for regra, _ in violacoes), " ".join(["E-mail recusado."] + [frase for _, frase in violacoes]))
     email = {
         "hora": datetime.now().astimezone().isoformat(timespec="seconds"),
         "chamado": numero,

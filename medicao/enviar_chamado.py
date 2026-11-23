@@ -22,7 +22,7 @@ import servidor  # noqa: E402  (precisa vir depois da linha acima, que mostra on
 
 # Cada versão do agente é um workflow próprio no n8n, com o gatilho "Webhook" no seu caminho. A V0 continua no
 # caminho de sempre e pode ser medida de novo a qualquer hora.
-CAMINHOS = {"V0": "chamado", "V1": "chamado-v1"}
+CAMINHOS = {"V0": "chamado", "V1": "chamado-v1", "V2": "chamado-v2"}
 # Um pouco mais que o tempo máximo do workflow no n8n, de 5 minutos: o n8n encerra primeiro e o erro vem dele.
 # Um TimeoutError aqui quer dizer que o limite do servidor falhou (T12).
 TEMPO_MAXIMO = 330
