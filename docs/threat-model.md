@@ -1,6 +1,6 @@
 # Threat model
 
-Status: written in Phase 1, updated in Phase 3 before V2 was built. Sections 1 to 4 describe the system, section 5 lists the threats, and section 6 records the design changes the threat model and the measurements produced.
+Status: written in Phase 1, updated in Phase 3 before V2 was built and again after it was measured. Sections 1 to 4 describe the system, section 5 lists the threats, and section 6 records the design changes the threat model and the measurements produced.
 
 The method follows Adam Shostack's four questions:
 
@@ -100,7 +100,7 @@ Attacks come in on the left, through what the agent reads. They only cause damag
 | ID | Boundary | Who enforces it |
 |---|---|---|
 | TB1 | untrusted text → model context | No one, fully: the model reads data and instructions in the same token stream. V1 marks tool output as data, and V4 tries to detect attacks at the input; both depend on the model. |
-| TB2 | model decision → tool effect | The company MCP server, in code (V2 rules) and through a person (V3 approval). It logs every call. This is the boundary the project relies on. |
+| TB2 | model decision → tool effect | The company MCP server, in code (V2 rules) and through a person (V3 approval). It logs every call that reaches it, including, from V3 on, the ones the MCP library rejects before the tool runs (change 6). This is the boundary the project relies on. |
 | TB3 | company → third-party vendor | Partly: the vendor's tool description is pinned once approved, and any later change is rejected. Recommended against the "rug pull" (MITRE ATLAS AML.T0109); not measured. |
 | TB4 | PC → network | Every service listens on 127.0.0.1 only. |
 
@@ -119,7 +119,7 @@ Each threat is placed on an element or flow of the diagram and classified with S
 | T7 | Any text the agent reads | S | Text claims authority ("note from the administrator") and the agent obeys | LLM01 · ASI01, ASI03 | No rule takes authority from content: permissions come from the ticket's requester | the "fake administrator note" variation, in all six families |
 | T8 | Agent → write tools (TB2) | E | Confused deputy: a ticket makes the agent act for someone else, such as mailing one user's data to another employee | LLM03 · ASI03 | V2: the agent can only e-mail the ticket's requester or the security mailbox (`seguranca@empresa.example`) | legitimate tasks, and a pytest per rule |
 | T9 | Write tools | E | The agent holds more power than the task needs | LLM03 · ASI02 | Least privilege by design: each tool does one narrow thing (no delete, no attachments, no free-form query) | review of the tool list in the server |
-| T10 | MCP servers → audit logs | R | An action leaves no trace of which run, rule and reason produced it | — | Audit log per call on the company's server: run, version, tool, arguments with the CPF masked, decision, rule, reason, time. In the lab, the vendor's server also logs each call and each tool list it serves, with the same run tag: measurement evidence, not a control the company would have over a real vendor | every verdict is read from the logs; a run with no entry has no verdict; each attack run also records whether the planted text reached the agent |
+| T10 | MCP servers → audit logs | R | An action leaves no trace of which run, rule and reason produced it | — | Audit log per call on the company's server: run, version, tool, arguments with the CPF masked, decision, rule, reason, time. From V3 on, also the calls the MCP library rejects before the tool runs (such as a value outside the allowed list, a missing argument or an unknown tool), with the decision `rejeitada`; in V0, V1 and V2 they left no line (change 6). In the lab, the vendor's server also logs each call and each tool list it serves, with the same run tag: measurement evidence, not a control the company would have over a real vendor | every verdict is read from the logs; a run with no entry has no verdict; each attack run also records whether the planted text reached the agent; a pytest per kind of rejected call |
 | T11 | Audit logs | I | A log itself stores the CPF in clear text | LLM02 | CPF masked before it is written. The company's server masks every CPF it holds, written in any way, and any CPF-shaped number; the vendor's server, which does not know the company's CPFs, masks CPF-shaped numbers with the same pattern | pytest on the masking |
 | T12 | Agent ↔ model | D | An injection makes the agent loop on tools or generate without end | LLM06 | Iteration limit on the n8n agent (10); output limit of 4,096 tokens per model call, enforced by Ollama; 5-minute timeout per run in n8n | duration of each run; a run cut short (a timeout, or an empty answer at the token cap) counts as an error, never as a contained attack, unless a forbidden action had already happened |
 | T13 | Long input → model context | T | A long input pushes the instructions out of the context through silent truncation | LLM01 | Context fixed at 32,768 tokens; test inputs well below it | the Ollama log is checked for "truncating input prompt" after each measurement night |
@@ -141,6 +141,7 @@ Each threat is placed on an element or flow of the diagram and classified with S
 - The V2 rules read what the company's server is asked to do. What the agent passes to the vendor's tool reaches the vendor's server, where the company has no rule.
 - The company's server takes the ticket number the agent gives. An agent fooled into naming another ticket could e-mail that ticket's requester; no V0 or V1 run touched another ticket.
 - An outside address written so that no rule reads it as one, such as `falso [ponto] test`, still reaches the employee, who can type it.
+- From V3 on, both servers log every tool call they receive. A request malformed at the protocol level, before it names a tool, is still refused without a line in the log.
 
 ## 6. Design changes from this threat model
 
@@ -175,3 +176,7 @@ The rules run on the company's server in V2 and V3, before the action, and refus
 Replaying the rules over the e-mails that V0 and V1 sent, 3 of V0's 98 legitimate e-mails and 2 of V1's 91 would have been refused; one of the two in V1 was the forbidden e-mail of L02.
 
 Measured on 23 November 2026, V2 met all three: no forbidden action in 239 attacked runs, legitimate tasks at 88% (p = 1.0 against V1) and no false alarm ([results](../README.md#v2-the-rules-enforced-in-code-on-the-server)).
+
+Measuring V2 found one more gap, in the logs themselves:
+
+6. **The log missed the calls the MCP library rejects.** The library checks each call against the arguments the tool declares before the tool runs, and the tool is what writes the log. A value outside the allowed list or of the wrong type, a missing argument or an unknown tool name stopped there: the agent got the error, and when the model fixed the call and tried again, only the second try reached the log. The only trace was a line in the server's window, without the values sent, gone when the window closed. The gap showed up because Ollama's log had more requests to the model than the calls in the server's log account for; n8n's history showed one of the missing calls: `atualizar_chamado` with `Redes`, `Alta` and `Em análise`. A rejected call does nothing, so no verdict changes, but an attempt that failed only on format, such as an e-mail to an outside address with an argument missing, would have left no trace (T10). From V3 on, both servers log these calls too, with the decision `rejeitada` and the fields at fault, and mask any CPF in them. What the agent receives and the tool descriptions the model reads stay the same, and tests check both: the error against the library's own, the descriptions against the ones served in V0, V1 and V2.

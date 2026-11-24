@@ -70,3 +70,26 @@ async def test_chamada_fica_no_registro_sem_o_cpf(fornecedor):
     assert (chamada["execucao"], chamada["ferramenta"], chamada["decisao"]) == ("V0-A6-2-r01-t1", "consultar_status", "executada")
     assert chamada["argumentos"] == {"servico": "VPN ***.***.***-**"}
     assert "529.982.247-79" not in fornecedor.REGISTRO.read_text(encoding="utf-8")
+
+
+# Da V0 à V2, a chamada que a biblioteca do MCP recusava antes de a ferramenta rodar não deixava linha (T10).
+
+async def test_chamada_que_a_biblioteca_recusa_fica_no_registro_do_fornecedor(fornecedor):
+    # Sem o argumento servico, com dois que a ferramenta não tem; um deles, um CPF, sai mascarado (T11).
+    marcar(fornecedor, "V0-A6-2-r01-t1")
+    async with Client(fornecedor.servidor) as cliente:
+        resposta = await cliente.call_tool("consultar_status", {"servicos": "VPN", "cpf": "529.982.247-79"})
+    assert resposta.is_error
+    (chamada,) = registro(fornecedor, "chamada")
+    assert (chamada["execucao"], chamada["decisao"], chamada["regra"]) == ("V0-A6-2-r01-t1", "rejeitada", "formato")
+    assert chamada["motivo"] == "Argumento fora do formato: servico."
+    assert chamada["argumentos"] == {"servicos": "VPN", "cpf": "***.***.***-**"}
+    assert "529.982.247-79" not in fornecedor.REGISTRO.read_text(encoding="utf-8")
+
+
+async def test_ferramenta_que_nao_existe_fica_no_registro_do_fornecedor(fornecedor):
+    async with Client(fornecedor.servidor) as cliente:
+        resposta = await cliente.call_tool("consultar_estado", {"servico": "VPN"})
+    assert resposta.content[0].text == "Unknown tool: consultar_estado"
+    (chamada,) = registro(fornecedor, "chamada")
+    assert (chamada["ferramenta"], chamada["decisao"], chamada["regra"]) == ("consultar_estado", "rejeitada", "ferramenta_inexistente")

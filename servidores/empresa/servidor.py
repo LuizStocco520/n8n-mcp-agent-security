@@ -1,7 +1,8 @@
 """Servidor MCP da empresa (Projeto 3).
 
 Ferramentas: buscar_artigo e consultar_usuario (leitura), atualizar_chamado e enviar_email (escrita),
-sobre dados inventados. Cada chamada vai para o registro de auditoria. A partir da V1, o texto livre que as
+sobre dados inventados. Cada chamada vai para o registro de auditoria, inclusive a que a biblioteca do MCP recusa
+antes de a ferramenta rodar. A partir da V1, o texto livre que as
 ferramentas de leitura devolvem sai marcado como dado. Na V2 e na V3, as regras de regras.py recusam, antes de
 executar, o que o modelo de ameaças proíbe.
 
@@ -20,6 +21,8 @@ from pathlib import Path
 from typing import Literal
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+from pydantic import ValidationError
 
 import regras
 
@@ -46,7 +49,28 @@ CPF = regras.CPF
 # O SDK roda cada ferramenta numa thread. A trava faz uma escrita esperar a outra, para nada se misturar nos arquivos.
 TRAVA = threading.Lock()
 
-servidor = MCPServer(name="empresa")
+
+class ServidorDaEmpresa(MCPServer):
+    """O servidor da biblioteca, com uma mudança só: a chamada que a biblioteca recusa também vai para o registro (T10).
+
+    A biblioteca confere cada chamada contra os argumentos que a ferramenta declara antes de rodá-la. Um valor fora da
+    lista ou do tipo errado, um argumento faltando ou o nome de uma ferramenta que não existe param ali, e a
+    ferramenta, que é quem grava o registro, nunca roda. O modelo lê o erro e tenta de novo; da V0 à V2, a tentativa
+    recusada não deixava linha.
+    """
+
+    async def call_tool(self, name: str, arguments: dict, context=None):
+        try:
+            return await super().call_tool(name, arguments, context)
+        except ToolError as erro:
+            recusa = recusa_da_biblioteca(erro)
+            if recusa is not None:
+                registrar(name, argumentos_como_vieram(arguments), "rejeitada", *recusa)
+            # O mesmo erro segue adiante: o agente recebe a resposta que receberia sem esta linha no registro.
+            raise
+
+
+servidor = ServidorDaEmpresa(name="empresa")
 
 
 class Recusa(Exception):
@@ -161,6 +185,37 @@ def registrar(ferramenta: str, argumentos: dict, decisao: str, regra: str, motiv
     REGISTRO.parent.mkdir(exist_ok=True)
     with TRAVA, open(REGISTRO, "a", encoding="utf-8") as arquivo:
         arquivo.write(json.dumps(linha, ensure_ascii=False) + "\n")
+
+
+def recusa_da_biblioteca(erro: ToolError) -> tuple[str, str] | None:
+    """A regra e o motivo quando a biblioteca recusou a chamada antes de a ferramenta rodar; None quando ela rodou.
+
+    Na versão 2.3.0 da biblioteca, um erro de validação como causa quer dizer argumento fora do que a ferramenta
+    declara: é o mesmo teste que ela usa para escrever a linha dela na janela do servidor. Nenhuma causa quer dizer
+    ferramenta que não existe, porque a biblioteca embrulha todo erro de dentro da ferramenta num novo, com o original
+    como causa.
+    Qualquer outro erro saiu de dentro da ferramenta, que já gravou a linha dela.
+    """
+    if isinstance(erro, UnexpectedToolError):
+        return None
+    if isinstance(erro.__cause__, ValidationError):
+        campos = sorted({".".join(str(parte) for parte in falha["loc"]) for falha in erro.__cause__.errors()})
+        return "formato", f"Argumento fora do formato: {', '.join(campos)}."
+    if erro.__cause__ is None:
+        return "ferramenta_inexistente", "Nenhuma ferramenta com esse nome."
+    return None
+
+
+def argumentos_como_vieram(argumentos: dict) -> dict:
+    """Os argumentos de uma chamada recusada, como o agente mandou.
+
+    Na chamada recusada pela biblioteca, um valor pode ser número, lista ou objeto. Ele vira texto, e o registrar()
+    mascara também o CPF que estiver dentro dele (T11).
+    """
+    return {
+        campo: valor if valor is None or isinstance(valor, str) else json.dumps(valor, ensure_ascii=False)
+        for campo, valor in argumentos.items()
+    }
 
 
 def auditado(ferramenta):

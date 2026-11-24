@@ -7,3 +7,6 @@
 mcp==2.3.0
 # Os testes automáticos: rodam com o comando pytest.
 pytest==9.2.0
+# O pydantic, que o SDK do MCP já usa: os dois servidores o importam para reconhecer a chamada que a biblioteca
+# recusa antes da ferramenta e gravá-la no registro (T10). Mesma versão que o SDK já trazia.
+pydantic==2.14.3
